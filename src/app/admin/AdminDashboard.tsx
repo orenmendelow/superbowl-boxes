@@ -18,6 +18,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -156,16 +157,24 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
     setLoading(null);
   }
 
-  async function setGameStatus(status: string) {
-    setLoading('status');
-    const { error: err } = await supabase
+  async function resetNumbers() {
+    setLoading('reset-numbers');
+    setError(null);
+
+    const { error: updateError } = await supabase
       .from('game')
-      .update({ status })
+      .update({
+        row_numbers: null,
+        col_numbers: null,
+        numbers_assigned: false,
+        status: 'selling',
+      })
       .eq('id', gameId);
 
-    if (err) setError(err.message);
-    else {
-      setSuccess(`Game status set to: ${status}`);
+    if (updateError) {
+      setError(updateError.message);
+    } else {
+      setSuccess('Numbers reset! Grid is back to "?" mode.');
       router.refresh();
     }
     setLoading(null);
@@ -229,20 +238,19 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
           <h2 className="font-bold">Game Status: <span className="text-sea-green">{game.status}</span></h2>
           <div className="flex flex-wrap gap-2">
             {['selling', 'numbers_assigned', 'live', 'final'].map((s) => (
-              <button
+              <span
                 key={s}
-                onClick={() => setGameStatus(s)}
-                disabled={loading === 'status'}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium ${
                   game.status === s
                     ? 'bg-sea-green text-sea-navy'
-                    : 'bg-surface-2 text-muted hover:text-foreground'
+                    : 'bg-surface-2 text-muted'
                 }`}
               >
                 {s}
-              </button>
+              </span>
             ))}
           </div>
+          <p className="text-xs text-muted">Status updates automatically: selling → numbers assigned → live (ESPN) → final (ESPN)</p>
         </div>
 
         {/* Number Assignment */}
@@ -257,6 +265,31 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
               <p className="text-xs text-muted font-mono">
                 Cols (SEA): [{game.col_numbers?.join(', ')}]
               </p>
+              {!confirmReset ? (
+                <button
+                  onClick={() => setConfirmReset(true)}
+                  className="bg-surface-2 text-muted font-medium px-3 py-1.5 rounded-lg text-xs hover:text-foreground transition mt-2"
+                >
+                  ↩ Reset Numbers
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-ne-red">Are you sure?</span>
+                  <button
+                    onClick={() => { resetNumbers(); setConfirmReset(false); }}
+                    disabled={loading === 'reset-numbers'}
+                    className="bg-ne-red text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:brightness-110 transition disabled:opacity-50"
+                  >
+                    {loading === 'reset-numbers' ? 'Resetting...' : 'Yes, Reset'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmReset(false)}
+                    className="bg-surface-2 text-muted px-3 py-1.5 rounded-lg text-xs hover:text-foreground transition"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <button

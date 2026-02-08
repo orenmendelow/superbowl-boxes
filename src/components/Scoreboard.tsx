@@ -1,30 +1,37 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ESPNScore } from '@/lib/types';
 
 export default function Scoreboard() {
   const [score, setScore] = useState<ESPNScore | null>(null);
   const [loading, setLoading] = useState(true);
+  const gameStateRef = useRef<string | null>(null);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     async function fetchScore() {
       try {
         const res = await fetch('/api/score');
         const data = await res.json();
-        if (data.score) setScore(data.score);
+        if (data.score) {
+          setScore(data.score);
+          gameStateRef.current = data.score.gameState;
+        }
       } catch (err) {
         console.error('Failed to fetch score:', err);
       } finally {
         setLoading(false);
       }
+      // Schedule next fetch based on current game state
+      const delay = gameStateRef.current === 'in' ? 30000 : 300000;
+      timeoutId = setTimeout(fetchScore, delay);
     }
 
     fetchScore();
-    // Poll based on game state
-    const interval = setInterval(fetchScore, score?.gameState === 'in' ? 30000 : 300000);
-    return () => clearInterval(interval);
-  }, [score?.gameState]);
+    return () => clearTimeout(timeoutId);
+  }, []);
 
   if (loading) {
     return (

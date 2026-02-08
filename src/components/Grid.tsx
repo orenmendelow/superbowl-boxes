@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Box, Game, calculatePrice, QuarterResult } from '@/lib/types';
 
@@ -243,7 +243,7 @@ export default function Grid({
 
           {/* Rows */}
           {Array.from({ length: 10 }, (_, rowIdx) => (
-            <>
+            <React.Fragment key={`row-${rowIdx}`}>
               {/* Row header (SEA / away) */}
               <div
                 key={`row-${rowIdx}`}
@@ -347,7 +347,7 @@ export default function Grid({
                   </button>
                 );
               })}
-            </>
+            </React.Fragment>
           ))}
         </div>
       </div>
