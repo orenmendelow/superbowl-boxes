@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Box, Game, QuarterResult, Profile, calculatePrice } from '@/lib/types';
+import { Box, Game, QuarterResult, Profile, calculatePrice, calculateUpgradePrice } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import Header from '@/components/Header';
 
@@ -20,6 +20,8 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [giveawayAlloc, setGiveawayAlloc] = useState<Record<string, number>>({});
+  const [confirmGiveaway, setConfirmGiveaway] = useState(false);
   const supabase = createClient();
   const router = useRouter();
 
@@ -202,6 +204,86 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
     setLoading(null);
   }
 
+  const giveawayTotal = Object.values(giveawayAlloc).reduce((s, n) => s + n, 0);
+  const giveawayRemaining = availableBoxes.length - giveawayTotal;
+
+  function adjustAlloc(userId: string, delta: number) {
+    setGiveawayAlloc((prev) => {
+      const current = prev[userId] || 0;
+      const next = Math.max(0, current + delta);
+      // Don't exceed remaining available boxes
+      const totalOthers = Object.entries(prev).reduce((s, [k, v]) => k === userId ? s : s + v, 0);
+      const capped = Math.min(next, availableBoxes.length - totalOthers);
+      const copy = { ...prev };
+      if (capped === 0) {
+        delete copy[userId];
+      } else {
+        copy[userId] = capped;
+      }
+      return copy;
+    });
+    setConfirmGiveaway(false);
+  }
+
+  function giveAllRemainingTo(userId: string) {
+    setGiveawayAlloc((prev) => {
+      const totalOthers = Object.entries(prev).reduce((s, [k, v]) => k === userId ? s : s + v, 0);
+      const maxForUser = availableBoxes.length - totalOthers;
+      const copy = { ...prev };
+      if (maxForUser <= 0) {
+        delete copy[userId];
+      } else {
+        copy[userId] = maxForUser;
+      }
+      return copy;
+    });
+    setConfirmGiveaway(false);
+  }
+
+  async function distributeGiveaway() {
+    if (giveawayTotal === 0) return;
+    setLoading('giveaway');
+    setError(null);
+
+    // Grab available box IDs
+    const emptyIds = availableBoxes.map((b) => b.id);
+    let cursor = 0;
+    const now = new Date().toISOString();
+
+    for (const [userId, count] of Object.entries(giveawayAlloc)) {
+      if (count <= 0) continue;
+      const batchIds = emptyIds.slice(cursor, cursor + count);
+      cursor += count;
+
+      const { error: updateError } = await supabase
+        .from('boxes')
+        .update({
+          user_id: userId,
+          status: 'confirmed',
+          reserved_at: now,
+          confirmed_at: now,
+        })
+        .in('id', batchIds)
+        .eq('status', 'available');
+
+      if (updateError) {
+        setError(updateError.message);
+        setLoading(null);
+        return;
+      }
+    }
+
+    const summary = Object.entries(giveawayAlloc)
+      .filter(([, c]) => c > 0)
+      .map(([uid, c]) => `${profiles.find((p) => p.id === uid)?.full_name || 'Unknown'}: ${c}`)
+      .join(', ');
+    setSuccess(`Gave away ${giveawayTotal} boxes! (${summary})`);
+    setGiveawayAlloc({});
+    setConfirmGiveaway(false);
+    router.refresh();
+    setLoading(null);
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header userName="Admin" />
@@ -324,6 +406,123 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
           )}
         </div>
 
+        {/* Give Away Empty Boxes */}
+        <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
+          <h2 className="font-bold">Give Away Remaining Empty Boxes ({availableBoxes.length} available)</h2>
+          {availableBoxes.length === 0 ? (
+            <p className="text-sm text-muted">All boxes are claimed — nothing to give away.</p>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-xs text-muted">
+                Distribute the {availableBoxes.length} remaining boxes across users for free.
+                Use +/− to allocate, then confirm. Boxes will be marked confirmed with no payment.
+              </p>
+              <div className="space-y-1">
+                {profiles.map((p) => {
+                  const alloc = giveawayAlloc[p.id] || 0;
+                  const userExisting = boxes.filter((b) => b.user_id === p.id && (b.status === 'confirmed' || b.status === 'reserved')).length;
+                  return (
+                    <div key={p.id} className="flex items-center justify-between gap-2 p-2 rounded-lg bg-surface-2">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium truncate block">{p.full_name}</span>
+                        <span className="text-xs text-muted">{userExisting} box{userExisting !== 1 ? 'es' : ''} already</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => adjustAlloc(p.id, -5)}
+                          disabled={alloc === 0}
+                          className="w-7 h-7 rounded bg-surface border border-border text-xs font-bold text-muted hover:text-foreground disabled:opacity-30 transition"
+                          title="−5"
+                        >
+                          −5
+                        </button>
+                        <button
+                          onClick={() => adjustAlloc(p.id, -1)}
+                          disabled={alloc === 0}
+                          className="w-7 h-7 rounded bg-surface border border-border text-lg font-bold text-muted hover:text-foreground disabled:opacity-30 transition leading-none"
+                        >
+                          −
+                        </button>
+                        <span className={`w-8 text-center text-sm font-bold tabular-nums ${alloc > 0 ? 'text-sea-green' : 'text-muted'}`}>
+                          {alloc}
+                        </span>
+                        <button
+                          onClick={() => adjustAlloc(p.id, 1)}
+                          disabled={giveawayRemaining <= 0}
+                          className="w-7 h-7 rounded bg-surface border border-border text-lg font-bold text-muted hover:text-foreground disabled:opacity-30 transition leading-none"
+                        >
+                          +
+                        </button>
+                        <button
+                          onClick={() => adjustAlloc(p.id, 5)}
+                          disabled={giveawayRemaining <= 0}
+                          className="w-7 h-7 rounded bg-surface border border-border text-xs font-bold text-muted hover:text-foreground disabled:opacity-30 transition"
+                          title="+5"
+                        >
+                          +5
+                        </button>
+                        <button
+                          onClick={() => giveAllRemainingTo(p.id)}
+                          disabled={giveawayRemaining <= 0 && alloc === 0}
+                          className="ml-1 px-2 h-7 rounded bg-surface border border-border text-[10px] font-medium text-muted hover:text-sea-green disabled:opacity-30 transition whitespace-nowrap"
+                          title="Give all remaining to this user"
+                        >
+                          All
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Summary & Confirm */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-border">
+                <p className="text-sm">
+                  <span className="text-sea-green font-bold">{giveawayTotal}</span>
+                  <span className="text-muted"> allocated · </span>
+                  <span className="font-bold">{giveawayRemaining}</span>
+                  <span className="text-muted"> remaining</span>
+                </p>
+                <div className="flex gap-2">
+                  {giveawayTotal > 0 && (
+                    <button
+                      onClick={() => { setGiveawayAlloc({}); setConfirmGiveaway(false); }}
+                      className="text-muted text-xs hover:text-foreground transition"
+                    >
+                      Clear
+                    </button>
+                  )}
+                  {!confirmGiveaway ? (
+                    <button
+                      onClick={() => setConfirmGiveaway(true)}
+                      disabled={giveawayTotal === 0}
+                      className="bg-sea-green text-sea-navy font-bold px-4 py-2 rounded-lg text-sm hover:brightness-110 transition disabled:opacity-50"
+                    >
+                      Give Away {giveawayTotal} Boxes
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-ne-red">Sure?</span>
+                      <button
+                        onClick={distributeGiveaway}
+                        disabled={loading === 'giveaway'}
+                        className="bg-ne-red text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:brightness-110 transition disabled:opacity-50"
+                      >
+                        {loading === 'giveaway' ? 'Assigning...' : `Yes, give ${giveawayTotal} boxes`}
+                      </button>
+                      <button
+                        onClick={() => setConfirmGiveaway(false)}
+                        className="bg-surface-2 text-muted px-3 py-1.5 rounded-lg text-xs hover:text-foreground transition"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Quarter Results */}
         <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
           <h2 className="font-bold">Quarter Results</h2>
@@ -350,7 +549,8 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
             Array.from(reservedByUser.entries()).map(([userId, userBoxes]) => {
               const profile = userBoxes[0]?.profiles;
               const count = userBoxes.length;
-              const amount = calculatePrice(count);
+              const userConfirmed = confirmedBoxes.filter((b) => b.user_id === userId).length;
+              const amount = calculateUpgradePrice(userConfirmed, count);
               const reservedAt = userBoxes[0]?.reserved_at;
               const minutesAgo = reservedAt
                 ? Math.floor((Date.now() - new Date(reservedAt).getTime()) / 60000)
@@ -366,7 +566,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
                   <div>
                     <p className="font-medium">{profile?.full_name || 'Unknown'}</p>
                     <p className="text-xs text-muted">
-                      {profile?.email} · {count} boxes · ${amount} · {minutesAgo}m ago
+                      {profile?.email} · {count} new{userConfirmed > 0 ? ` (+${userConfirmed} confirmed)` : ''} · ${amount} · {minutesAgo}m ago
                     </p>
                   </div>
                   <div className="flex gap-2">
