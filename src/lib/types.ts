@@ -40,6 +40,7 @@ export interface Box {
   user_id: string | null;
   reserved_at: string | null;
   confirmed_at: string | null;
+  is_free: boolean;
   status: 'available' | 'reserved' | 'confirmed';
   profiles?: Profile | null;
 }
@@ -90,12 +91,13 @@ export function calculatePrice(count: number): number {
 
 /**
  * Calculate the actual pot by summing per-user prices.
- * Each user's price is based on their own box count (volume discounts apply per-user, not globally).
+ * Excludes free (gifted) boxes since no money was collected for them.
+ * Each user's price is based on their own paid box count (volume discounts apply per-user).
  */
-export function calculatePot(boxes: { user_id: string | null; status: string }[]): number {
+export function calculatePot(boxes: { user_id: string | null; status: string; is_free?: boolean }[]): number {
   const countByUser = new Map<string, number>();
   for (const b of boxes) {
-    if (b.user_id && (b.status === 'confirmed' || b.status === 'reserved')) {
+    if (b.user_id && (b.status === 'confirmed' || b.status === 'reserved') && !b.is_free) {
       countByUser.set(b.user_id, (countByUser.get(b.user_id) || 0) + 1);
     }
   }

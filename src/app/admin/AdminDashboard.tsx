@@ -26,9 +26,14 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
   const confirmedBoxes = boxes.filter((b) => b.status === 'confirmed');
   const reservedBoxes = boxes.filter((b) => b.status === 'reserved');
   const availableBoxes = boxes.filter((b) => b.status === 'available');
+  const freeBoxes = boxes.filter((b) => b.is_free);
 
-  const totalPot = calculatePot(boxes);
+  // Revenue = money actually collected (confirmed, non-free)
   const confirmedRevenue = calculatePot(confirmedBoxes);
+  // Pending = money expected from reserved boxes
+  const pendingRevenue = calculatePot(reservedBoxes);
+  // Pot = total money (confirmed + reserved, excluding free)
+  const totalPot = confirmedRevenue + pendingRevenue;
 
   // Group reserved boxes by user
   const reservedByUser = new Map<string, Box[]>();
@@ -224,12 +229,23 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
         )}
 
         {/* Overview Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
             { label: 'Available', value: availableBoxes.length, color: 'text-muted' },
             { label: 'Reserved', value: reservedBoxes.length, color: 'text-yellow-500' },
-            { label: 'Confirmed', value: confirmedBoxes.length, color: 'text-emerald-500' },
-            { label: 'Revenue', value: `$${confirmedRevenue}`, color: 'text-sea-green' },
+            { label: 'Confirmed', value: confirmedBoxes.length - freeBoxes.length, color: 'text-emerald-500' },
+            { label: 'Free', value: freeBoxes.length, color: 'text-sky-400' },
+          ].map((stat) => (
+            <div key={stat.label} className="bg-surface border border-border rounded-xl p-4 text-center">
+              <p className="text-xs text-muted">{stat.label}</p>
+              <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {[
+            { label: 'Collected', value: `$${confirmedRevenue}`, color: 'text-sea-green' },
+            { label: 'Pending', value: `$${pendingRevenue}`, color: 'text-yellow-500' },
             { label: 'Total Pot', value: `$${totalPot}`, color: 'text-foreground' },
           ].map((stat) => (
             <div key={stat.label} className="bg-surface border border-border rounded-xl p-4 text-center">

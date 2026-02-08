@@ -48,6 +48,7 @@ CREATE TABLE boxes (
   user_id UUID REFERENCES profiles(id),
   reserved_at TIMESTAMPTZ,
   confirmed_at TIMESTAMPTZ,
+  is_free BOOLEAN DEFAULT FALSE,
   status TEXT DEFAULT 'available' CHECK (status IN ('available', 'reserved', 'confirmed')),
   UNIQUE(game_id, row_index, col_index)
 );

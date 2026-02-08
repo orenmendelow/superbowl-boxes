@@ -78,6 +78,7 @@ export default function GiveawayDashboard({ boxes, profiles, gameId }: GiveawayP
           status: 'confirmed',
           reserved_at: now,
           confirmed_at: now,
+          is_free: true,
         })
         .in('id', batchIds)
         .eq('status', 'available');
