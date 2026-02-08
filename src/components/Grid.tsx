@@ -315,16 +315,17 @@ export default function Grid({
                 const isReserved = box.status === 'reserved';
                 const isConfirmed = box.status === 'confirmed';
 
-                const actualRow = game.row_numbers ? game.row_numbers[rowIdx] : null;
-                const actualCol = game.col_numbers ? game.col_numbers[colIdx] : null;
+                // Column headers (row_numbers) = NE/home digits, Row headers (col_numbers) = SEA/away digits
+                const homeDigit = game.row_numbers ? game.row_numbers[colIdx] : null;
+                const awayDigit = game.col_numbers ? game.col_numbers[rowIdx] : null;
                 const isLiveWinner =
                   winningRow !== null &&
                   winningCol !== null &&
-                  actualRow === winningRow &&
-                  actualCol === winningCol;
+                  homeDigit === winningRow &&
+                  awayDigit === winningCol;
 
-                const qKey = actualRow !== null && actualCol !== null
-                  ? `${actualRow}-${actualCol}`
+                const qKey = homeDigit !== null && awayDigit !== null
+                  ? `${homeDigit}-${awayDigit}`
                   : null;
                 const wonQuarters = qKey ? quarterWinners.get(qKey) : null;
 

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react';
 import Scoreboard from '@/components/Scoreboard';
 import Grid from '@/components/Grid';
-import { Box, Game, QuarterResult, ESPNScore } from '@/lib/types';
+import { Box, Game, QuarterResult, ESPNScore, calculatePot } from '@/lib/types';
 
 interface BoardContentProps {
   initialBoxes: Box[];
@@ -39,10 +39,10 @@ export default function BoardContent({
   ): string | null {
     if (!game.row_numbers || !game.col_numbers) return null;
 
-    // row_numbers maps row_index → actual digit for home (rows)
-    // col_numbers maps col_index → actual digit for away (cols)
-    const rowIdx = game.row_numbers.indexOf(homeDigit);
-    const colIdx = game.col_numbers.indexOf(awayDigit);
+    // row_numbers = column headers (home/NE digits)
+    // col_numbers = row headers (away/SEA digits)
+    const colIdx = game.row_numbers.indexOf(homeDigit);
+    const rowIdx = game.col_numbers.indexOf(awayDigit);
     if (rowIdx === -1 || colIdx === -1) return null;
 
     const box = boxes.find(
@@ -57,6 +57,8 @@ export default function BoardContent({
     game.payout_q3,
     game.payout_q4,
   ];
+
+  const totalPot = calculatePot(initialBoxes);
 
   return (
     <>
@@ -123,7 +125,7 @@ export default function BoardContent({
                     {currentWinner || '—'}
                   </p>
                   <p className="text-[9px] text-sea-green/60">
-                    ${payouts[q - 1]}
+                    ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
                   </p>
                 </div>
               );
@@ -152,7 +154,7 @@ export default function BoardContent({
                     {likelyWinner || '—'}
                   </p>
                   <p className="text-[9px] text-yellow-500/60">
-                    ${payouts[q - 1]}
+                    ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
                   </p>
                 </div>
               );
@@ -171,7 +173,7 @@ export default function BoardContent({
                   —
                 </p>
                 <p className="text-[9px] text-muted/40">
-                  ${payouts[q - 1]}
+                  ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
                 </p>
               </div>
             );

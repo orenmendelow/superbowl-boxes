@@ -154,8 +154,10 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
       return;
     }
 
-    const rowIdx = game.row_numbers.indexOf(homeLastDigit);
-    const colIdx = game.col_numbers.indexOf(awayLastDigit);
+    // Column headers = row_numbers (home/NE), Row headers = col_numbers (away/SEA)
+    // Find which column has the home digit, which row has the away digit
+    const colIdx = game.row_numbers.indexOf(homeLastDigit);
+    const rowIdx = game.col_numbers.indexOf(awayLastDigit);
 
     const winningBox = boxes.find((b) => b.row_index === rowIdx && b.col_index === colIdx);
     const payoutPct = [0, game.payout_q1, game.payout_q2, game.payout_q3, game.payout_q4][quarter];
