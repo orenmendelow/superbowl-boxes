@@ -384,17 +384,11 @@ export default function Grid({
           </p>
           <div className="flex flex-col items-center gap-3">
             <a
-              href={`venmo://paycharge?txn=pay&recipients=orenmendelow&amount=${venmoAmount}&note=${venmoNote}`}
+              href={`https://venmo.com/orenmendelow?txn=pay&amount=${venmoAmount}&note=${venmoNote}`}
+              target="_blank"
               className="bg-[#008CFF] text-white font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition inline-block w-full sm:w-auto"
             >
               Pay ${venmoAmount} on Venmo
-            </a>
-            <a
-              href={`https://venmo.com/orenmendelow?txn=pay&amount=${venmoAmount}&note=${venmoNote}`}
-              target="_blank"
-              className="text-sm text-muted underline"
-            >
-              Open Venmo Web →
             </a>
           </div>
           <p className="text-xs text-muted">Venmo: @orenmendelow</p>
