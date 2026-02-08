@@ -20,6 +20,11 @@ export const metadata: Metadata = {
     description: "Pick your boxes, win big on Super Bowl Sunday!",
     type: "website",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Super Bowl LX Boxes — SEA vs NE",
+    description: "Pick your boxes, win big on Super Bowl Sunday!",
+  },
 };
 
 export default function RootLayout({
