@@ -332,7 +332,7 @@ export default function Grid({
                     }
                   >
                     {wonQuarters && (
-                      <span className="text-[6px] text-yellow-400 font-bold leading-none">🏆</span>
+                      <span className="text-[6px] text-yellow-400 font-bold leading-none">★</span>
                     )}
                     {displayName && (
                       <span className={`font-medium truncate w-full px-px text-center ${
@@ -378,7 +378,7 @@ export default function Grid({
       {/* Pending boxes / Venmo payment panel */}
       {(showVenmo || userReservedCount > 0) && (
         <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 text-center space-y-4">
-          <h3 className="text-lg font-bold text-yellow-500">⏳ {userReservedCount} Box{userReservedCount !== 1 ? 'es' : ''} Pending Payment</h3>
+          <h3 className="text-lg font-bold text-yellow-500">{userReservedCount} Box{userReservedCount !== 1 ? 'es' : ''} Pending Payment</h3>
           <p className="text-sm text-muted">
             Complete your payment via Venmo. Admin will confirm once received.
           </p>

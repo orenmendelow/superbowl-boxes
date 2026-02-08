@@ -22,7 +22,6 @@ export default async function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-4xl">🚫</p>
           <h1 className="text-2xl font-bold">Access Denied</h1>
           <p className="text-muted">You are not an admin.</p>
           <p className="text-xs text-muted">Your user ID: {user.id}</p>

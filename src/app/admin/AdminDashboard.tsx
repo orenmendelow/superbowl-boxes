@@ -186,7 +186,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
 
       <main className="flex-1 max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">🛠 Admin Dashboard</h1>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <a href="/board" className="text-sm text-sea-green hover:underline">View Board →</a>
         </div>
 
@@ -258,7 +258,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
           <h2 className="font-bold">Number Assignment</h2>
           {game.numbers_assigned ? (
             <div className="space-y-2">
-              <p className="text-sm text-sea-green">✅ Numbers assigned</p>
+              <p className="text-sm text-sea-green">Numbers assigned</p>
               <p className="text-xs text-muted font-mono">
                 Rows (NE): [{game.row_numbers?.join(', ')}]
               </p>
@@ -297,7 +297,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
               disabled={loading === 'assign'}
               className="bg-ne-red text-white font-bold px-4 py-2 rounded-lg hover:brightness-110 transition disabled:opacity-50"
             >
-              {loading === 'assign' ? 'Assigning...' : '🎲 Randomize Numbers'}
+              {loading === 'assign' ? 'Assigning...' : 'Randomize Numbers'}
             </button>
           )}
         </div>
@@ -353,14 +353,14 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
                       disabled={loading === `confirm-${userId}`}
                       className="bg-sea-green text-sea-navy font-bold px-3 py-1.5 rounded-lg text-xs hover:brightness-110 disabled:opacity-50"
                     >
-                      ✅ Confirm
+                      Confirm
                     </button>
                     <button
                       onClick={() => releaseBoxes(userId)}
                       disabled={loading === `release-${userId}`}
                       className="bg-ne-red text-white font-bold px-3 py-1.5 rounded-lg text-xs hover:brightness-110 disabled:opacity-50"
                     >
-                      ❌ Release
+                      Release
                     </button>
                   </div>
                 </div>

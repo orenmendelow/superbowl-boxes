@@ -18,7 +18,7 @@ export default function Header({ userName }: { userName?: string | null }) {
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <a href="/" className="flex items-center gap-2">
           <span className="text-lg sm:text-xl font-bold">
-            🏈 <span className="text-sea-green">SB</span>{' '}
+            <span className="text-sea-green">SB</span>{' '}
             <span className="text-ne-red">LX</span>{' '}
             <span className="text-foreground hidden sm:inline">Boxes</span>
           </span>

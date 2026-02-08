@@ -28,7 +28,7 @@ export default function Countdown() {
   if (!timeLeft) {
     return (
       <div className="text-center">
-        <p className="text-sea-green font-bold text-xl">🏈 GAME TIME!</p>
+        <p className="text-sea-green font-bold text-xl">GAME TIME!</p>
       </div>
     );
   }

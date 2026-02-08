@@ -46,7 +46,6 @@ function LoginForm() {
         <Header />
         <main className="flex-1 flex items-center justify-center px-4">
           <div className="bg-surface border border-border rounded-xl p-8 max-w-md w-full text-center space-y-4">
-            <p className="text-4xl">📧</p>
             <h1 className="text-2xl font-bold">Check Your Email!</h1>
             <p className="text-muted">
               We sent a magic link to <span className="text-foreground font-medium">{email}</span>.
@@ -65,7 +64,6 @@ function LoginForm() {
       <main className="flex-1 flex items-center justify-center px-4">
         <div className="bg-surface border border-border rounded-xl p-8 max-w-md w-full space-y-6">
           <div className="text-center">
-            <p className="text-4xl mb-2">🏈</p>
             <h1 className="text-2xl font-bold">Sign In</h1>
             <p className="text-muted text-sm mt-1">Enter your info to pick your boxes</p>
           </div>
@@ -104,7 +102,7 @@ function LoginForm() {
               disabled={loading || !email || !fullName}
               className="w-full bg-sea-green text-sea-navy font-bold py-2.5 rounded-lg hover:brightness-110 transition disabled:opacity-50"
             >
-              {loading ? 'Sending...' : 'Send Magic Link ✨'}
+              {loading ? 'Sending...' : 'Send Magic Link'}
             </button>
           </form>
 
