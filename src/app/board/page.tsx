@@ -1,11 +1,9 @@
 import { createClient } from '@/lib/supabase/server';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import Scoreboard from '@/components/Scoreboard';
-import Grid from '@/components/Grid';
+import BoardContent from '@/components/BoardContent';
 import { Game, Box, QuarterResult } from '@/lib/types';
-
-const GAME_ID = '00000000-0000-0000-0000-000000000001';
+import { GAME_ID } from '@/lib/constants';
 
 export default async function BoardPage() {
   const supabase = await createClient();
@@ -80,9 +78,7 @@ export default async function BoardPage() {
           </p>
         </div>
 
-        <Scoreboard />
-
-        <Grid
+        <BoardContent
           initialBoxes={boxes as Box[]}
           game={game as Game}
           userId={user?.id || null}

@@ -1,19 +1,17 @@
 import { NextResponse } from 'next/server';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
+import { ESPN_GAME_ID, GAME_ID } from '@/lib/constants';
 
 const ESPN_API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
-const GAME_ID = '401772988';
-const DB_GAME_ID = '00000000-0000-0000-0000-000000000001';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 10;
 
 export async function GET() {
   try {
     const res = await fetch(ESPN_API, { next: { revalidate: 10 } });
     const data = await res.json();
 
-    const event = data.events?.find((e: any) => e.id === GAME_ID);
+    const event = data.events?.find((e: any) => e.id === ESPN_GAME_ID);
     if (!event) {
       return NextResponse.json({ score: null, error: 'Game not found' });
     }
@@ -54,7 +52,7 @@ export async function GET() {
       const { data: game } = await supabase
         .from('game')
         .select('status, numbers_assigned')
-        .eq('id', DB_GAME_ID)
+        .eq('id', GAME_ID)
         .single();
 
       if (game) {
@@ -70,7 +68,7 @@ export async function GET() {
           await supabase
             .from('game')
             .update({ status: newStatus })
-            .eq('id', DB_GAME_ID);
+            .eq('id', GAME_ID);
         }
       }
     } catch (dbErr) {

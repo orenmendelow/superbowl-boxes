@@ -88,7 +88,4 @@ export function calculatePrice(count: number): number {
   return count * 5;
 }
 
-export function formatPrice(count: number): string {
-  const total = calculatePrice(count);
-  return `$${total}`;
-}
+

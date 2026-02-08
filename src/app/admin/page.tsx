@@ -2,8 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminDashboard from './AdminDashboard';
 import { Box, Game, QuarterResult, Profile } from '@/lib/types';
-
-const GAME_ID = '00000000-0000-0000-0000-000000000001';
+import { GAME_ID } from '@/lib/constants';
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -24,7 +23,6 @@ export default async function AdminPage() {
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Access Denied</h1>
           <p className="text-muted">You are not an admin.</p>
-          <p className="text-xs text-muted">Your user ID: {user.id}</p>
           <a href="/board" className="text-sea-green hover:underline text-sm">← Back to Board</a>
         </div>
       </div>
@@ -58,6 +56,14 @@ export default async function AdminPage() {
     .from('profiles')
     .select('*')
     .order('full_name');
+
+  if (!game) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted">Game not found.</p>
+      </div>
+    );
+  }
 
   return (
     <AdminDashboard

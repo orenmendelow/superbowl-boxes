@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-
-const GAME_ID = '00000000-0000-0000-0000-000000000001';
+import { GAME_ID } from '@/lib/constants';
 
 export async function POST(request: Request) {
   const supabase = await createClient();

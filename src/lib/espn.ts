@@ -1,14 +1,14 @@
 import { ESPNScore } from './types';
+import { ESPN_GAME_ID } from './constants';
 
 const ESPN_API = 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard';
-const GAME_ID = '401772988';
 
 export async function fetchScore(): Promise<ESPNScore | null> {
   try {
     const res = await fetch(ESPN_API, { next: { revalidate: 10 } });
     const data = await res.json();
 
-    const event = data.events?.find((e: any) => e.id === GAME_ID);
+    const event = data.events?.find((e: any) => e.id === ESPN_GAME_ID);
     if (!event) return null;
 
     const competition = event.competitions[0];

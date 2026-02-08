@@ -4,42 +4,42 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Box, Game, calculatePrice, QuarterResult } from '@/lib/types';
 
-// 20 distinct, readable colors for player names on a dark background
+// 20 distinct player colors — muted tones that fit the dark navy/green site palette
 const PLAYER_COLORS = [
-  '#FF6B6B', // coral red
-  '#4ECDC4', // teal
-  '#FFD93D', // golden yellow
-  '#6C5CE7', // purple
-  '#FF8A5C', // peach orange
-  '#A8E6CF', // mint green
-  '#F78FB3', // pink
-  '#3DC1D3', // cyan
-  '#E77F67', // salmon
-  '#778BEB', // periwinkle
-  '#F5CD79', // sand
-  '#63CDDA', // sky blue
-  '#CF6A87', // mauve
-  '#C4E538', // lime
-  '#FDA7DF', // light pink
-  '#58B19F', // jade
-  '#E15F41', // burnt orange
-  '#B8E994', // light green
-  '#82CCDD', // baby blue
-  '#D4A5A5', // dusty rose
+  { text: '#5bb450', bg: 'rgba(91,180,80,0.15)' },   // green
+  { text: '#4a9ec5', bg: 'rgba(74,158,197,0.15)' },   // steel blue
+  { text: '#c75d3a', bg: 'rgba(199,93,58,0.15)' },    // burnt sienna
+  { text: '#8e7cc3', bg: 'rgba(142,124,195,0.15)' },   // muted purple
+  { text: '#c4953a', bg: 'rgba(196,149,58,0.15)' },    // amber
+  { text: '#4db89e', bg: 'rgba(77,184,158,0.15)' },    // sage teal
+  { text: '#c75480', bg: 'rgba(199,84,128,0.15)' },    // dusty rose
+  { text: '#5f8fb4', bg: 'rgba(95,143,180,0.15)' },    // slate blue
+  { text: '#a1785c', bg: 'rgba(161,120,92,0.15)' },    // tan
+  { text: '#7ba05b', bg: 'rgba(123,160,91,0.15)' },    // olive
+  { text: '#b56748', bg: 'rgba(181,103,72,0.15)' },    // terra cotta
+  { text: '#6b9dad', bg: 'rgba(107,157,173,0.15)' },   // cadet blue
+  { text: '#9b6b9e', bg: 'rgba(155,107,158,0.15)' },   // mauve
+  { text: '#6dab8e', bg: 'rgba(109,171,142,0.15)' },   // sea foam
+  { text: '#c27a5b', bg: 'rgba(194,122,91,0.15)' },    // copper
+  { text: '#7e92b0', bg: 'rgba(126,146,176,0.15)' },   // cool grey
+  { text: '#9aad4b', bg: 'rgba(154,173,75,0.15)' },    // moss
+  { text: '#b07a9b', bg: 'rgba(176,122,155,0.15)' },   // plum
+  { text: '#5da0a0', bg: 'rgba(93,160,160,0.15)' },    // teal grey
+  { text: '#c4884a', bg: 'rgba(196,136,74,0.15)' },    // caramel
 ];
 
-function getPlayerColorMap(boxes: Box[]): Map<string, string> {
-  const uniqueUsers = new Map<string, string>(); // userId -> color
-  const seen = new Set<string>();
+function getPlayerColorMap(boxes: Box[]): Map<string, { text: string; bg: string }> {
+  const colorMap = new Map<string, { text: string; bg: string }>();
+  let idx = 0;
 
   for (const box of boxes) {
-    if (box.user_id && !seen.has(box.user_id)) {
-      seen.add(box.user_id);
-      uniqueUsers.set(box.user_id, PLAYER_COLORS[seen.size - 1 % PLAYER_COLORS.length] || PLAYER_COLORS[(seen.size - 1) % PLAYER_COLORS.length]);
+    if (box.user_id && !colorMap.has(box.user_id)) {
+      colorMap.set(box.user_id, PLAYER_COLORS[idx % PLAYER_COLORS.length]);
+      idx++;
     }
   }
 
-  return uniqueUsers;
+  return colorMap;
 }
 
 interface GridProps {
@@ -79,8 +79,13 @@ export default function Grid({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'boxes', filter: `game_id=eq.${game.id}` },
         (payload) => {
+          const updated = payload.new as Box;
           setBoxes((prev) =>
-            prev.map((b) => (b.id === (payload.new as Box).id ? { ...b, ...payload.new as Box } : b))
+            prev.map((b) =>
+              b.id === updated.id
+                ? { ...b, ...updated, profiles: updated.profiles ?? b.profiles }
+                : b
+            )
           );
         }
       )
@@ -246,18 +251,7 @@ export default function Grid({
         )}
       </div>
 
-      {/* Quarter Results */}
-      {quarterResults.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-2">
-          {quarterResults.map((qr) => (
-            <div key={qr.quarter} className="bg-surface rounded-lg border border-border px-3 py-2 text-xs text-center">
-              <span className="text-muted">Q{qr.quarter}</span>
-              <p className="font-bold text-sea-green">{qr.profiles?.full_name || 'Unknown'}</p>
-              <p className="text-muted">${Number(qr.payout_amount).toFixed(0)}</p>
-            </div>
-          ))}
-        </div>
-      )}
+
 
       {/* Grid */}
       <div className="overflow-auto grid-scroll -mx-2 px-2 pb-2">
@@ -290,7 +284,7 @@ export default function Grid({
             <React.Fragment key={`row-${rowIdx}`}>
               {/* Row header (SEA / away) */}
               <div
-                key={`row-${rowIdx}`}
+                key={`row-header-${rowIdx}`}
                 className="flex items-center justify-center rounded text-[10px] sm:text-xs font-bold"
                 style={{ background: '#69be28', color: '#002a5c' }}
               >
@@ -321,7 +315,10 @@ export default function Grid({
                   : null;
                 const wonQuarters = qKey ? quarterWinners.get(qKey) : null;
 
+                const playerColor = box.user_id ? playerColorMap.get(box.user_id) : null;
+
                 let bgClass = 'bg-surface-2 hover:bg-border cursor-pointer active:scale-95';
+                let bgStyle: React.CSSProperties = {};
                 let borderClass = 'border border-border';
                 let animClass = '';
 
@@ -329,17 +326,21 @@ export default function Grid({
                   bgClass = 'bg-sea-green/30 cursor-pointer active:scale-95';
                   borderClass = 'border-2 border-sea-green';
                 } else if (isConfirmed && isMine) {
-                  bgClass = 'bg-sea-green/20';
+                  bgClass = '';
+                  bgStyle = { background: playerColor?.bg };
                   borderClass = 'border-2 border-sea-green';
                 } else if (isConfirmed) {
-                  bgClass = 'bg-emerald-900/40';
-                  borderClass = 'border border-emerald-700/50';
+                  bgClass = '';
+                  bgStyle = { background: playerColor?.bg || 'rgba(16,185,129,0.12)' };
+                  borderClass = 'border border-border';
                 } else if (isReserved && isMine) {
-                  bgClass = 'bg-yellow-500/20';
+                  bgClass = '';
+                  bgStyle = { background: playerColor?.bg };
                   borderClass = 'border-2 border-yellow-500';
                   animClass = 'animate-pulse-gold';
                 } else if (isReserved) {
-                  bgClass = 'bg-yellow-900/20';
+                  bgClass = '';
+                  bgStyle = { background: playerColor?.bg || 'rgba(234,179,8,0.08)' };
                   borderClass = 'border border-yellow-700/30';
                 } else if (!isAvailable) {
                   bgClass = 'bg-surface';
@@ -369,6 +370,7 @@ export default function Grid({
                       ${bgClass} ${borderClass} ${animClass}
                       ${isAvailable ? '' : 'cursor-default'}
                     `}
+                    style={bgStyle}
                     title={
                       box.profiles?.full_name
                         ? `${box.profiles.full_name} (${box.status})`
@@ -381,7 +383,7 @@ export default function Grid({
                     {displayName && (
                       <span
                         className="font-medium truncate w-full px-px text-center"
-                        style={{ color: box.user_id ? playerColorMap.get(box.user_id) : undefined }}
+                        style={{ color: playerColor?.text }}
                       >
                         {displayName}
                       </span>
@@ -431,6 +433,7 @@ export default function Grid({
             <a
               href={venmoUrl.toString()}
               target="_blank"
+              rel="noopener noreferrer"
               className="bg-[#008CFF] text-white font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition inline-block w-full sm:w-auto"
             >
               Pay ${venmoAmount} on Venmo

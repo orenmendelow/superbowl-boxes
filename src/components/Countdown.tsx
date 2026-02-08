@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 const KICKOFF = new Date('2026-02-08T23:30:00Z').getTime();
 
 export default function Countdown() {
-  const [timeLeft, setTimeLeft] = useState(calcTimeLeft());
+  const [timeLeft, setTimeLeft] = useState<ReturnType<typeof calcTimeLeft> | 'loading'>('loading');
 
   function calcTimeLeft() {
     const diff = KICKOFF - Date.now();
@@ -19,13 +19,22 @@ export default function Countdown() {
   }
 
   useEffect(() => {
+    setTimeLeft(calcTimeLeft());
     const timer = setInterval(() => {
       setTimeLeft(calcTimeLeft());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
 
-  if (!timeLeft) {
+  if (timeLeft === 'loading') {
+    return (
+      <div className="text-center">
+        <p className="text-muted animate-pulse">...</p>
+      </div>
+    );
+  }
+
+  if (timeLeft === null) {
     return (
       <div className="text-center">
         <p className="text-sea-green font-bold text-xl">GAME TIME!</p>

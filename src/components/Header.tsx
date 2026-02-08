@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 
 export default function Header({ userName, isAdmin }: { userName?: string | null; isAdmin?: boolean }) {
   const router = useRouter();
-  const supabase = createClient();
 
   async function handleLogout() {
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();

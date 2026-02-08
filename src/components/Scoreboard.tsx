@@ -3,10 +3,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { ESPNScore } from '@/lib/types';
 
-export default function Scoreboard() {
+interface ScoreboardProps {
+  onScoreUpdate?: (score: ESPNScore) => void;
+}
+
+export default function Scoreboard({ onScoreUpdate }: ScoreboardProps = {}) {
   const [score, setScore] = useState<ESPNScore | null>(null);
   const [loading, setLoading] = useState(true);
   const gameStateRef = useRef<string | null>(null);
+  const onScoreUpdateRef = useRef(onScoreUpdate);
+  onScoreUpdateRef.current = onScoreUpdate;
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
@@ -17,6 +23,7 @@ export default function Scoreboard() {
         const data = await res.json();
         if (data.score) {
           setScore(data.score);
+          onScoreUpdateRef.current?.(data.score);
           gameStateRef.current = data.score.gameState;
         }
       } catch (err) {
@@ -95,14 +102,6 @@ export default function Scoreboard() {
         <p className="text-xs text-muted text-center mt-3 max-w-sm mx-auto">
           {score.lastPlay}
         </p>
-      )}
-
-      {score.gameState === 'in' && (
-        <div className="text-center mt-2">
-          <span className="text-[10px] text-sea-green font-mono">
-            Last digit: {score.awayTeam} {score.awayScore % 10} × {score.homeTeam} {score.homeScore % 10}
-          </span>
-        </div>
       )}
     </div>
   );
