@@ -211,8 +211,12 @@ export default function Grid({
     quarterWinners.get(key)!.push(qr.quarter);
   });
 
-  const venmoNote = encodeURIComponent(`SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} boxes`);
+  const venmoNote = `SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} boxes`;
   const venmoAmount = calculatePrice(userReservedCount) || totalPrice;
+  const venmoUrl = new URL('https://venmo.com/orenmendelow');
+  venmoUrl.searchParams.set('txn', 'pay');
+  venmoUrl.searchParams.set('amount', String(venmoAmount));
+  venmoUrl.searchParams.set('note', venmoNote);
 
   return (
     <div className="space-y-4">
@@ -425,7 +429,7 @@ export default function Grid({
           </p>
           <div className="flex flex-col items-center gap-3">
             <a
-              href={`https://venmo.com/orenmendelow?txn=pay&amount=${venmoAmount}&note=${venmoNote}`}
+              href={venmoUrl.toString()}
               target="_blank"
               className="bg-[#008CFF] text-white font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition inline-block w-full sm:w-auto"
             >
