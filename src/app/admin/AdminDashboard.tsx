@@ -19,6 +19,7 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const supabase = createClient();
   const router = useRouter();
 
@@ -73,6 +74,27 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
       setError(updateError.message);
     } else {
       setSuccess('Boxes released!');
+      router.refresh();
+    }
+    setLoading(null);
+  }
+
+  async function deleteUser(userId: string) {
+    setLoading(`delete-${userId}`);
+    setError(null);
+
+    const res = await fetch('/api/admin/delete-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || 'Failed to delete user');
+    } else {
+      setSuccess('User deleted!');
+      setConfirmDelete(null);
       router.refresh();
     }
     setLoading(null);
@@ -379,12 +401,44 @@ export default function AdminDashboard({ game, boxes, quarterResults, profiles, 
               const reserved = userBoxes.filter((b) => b.status === 'reserved').length;
               return (
                 <div key={p.id} className="flex justify-between items-center p-2 rounded-lg bg-surface-2">
-                  <span>{p.full_name}</span>
-                  <span className="text-xs text-muted">
-                    {confirmed > 0 && <span className="text-emerald-500">{confirmed} confirmed</span>}
-                    {reserved > 0 && <span className="text-yellow-500 ml-2">{reserved} pending</span>}
-                    {confirmed === 0 && reserved === 0 && '0 boxes'}
+                  <span className="group relative cursor-default">
+                    {p.full_name}
+                    <span className="absolute left-0 -top-8 hidden group-hover:block bg-background border border-border text-xs text-muted px-2 py-1 rounded whitespace-nowrap z-10">
+                      {p.email}
+                    </span>
                   </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted">
+                      {confirmed > 0 && <span className="text-emerald-500">{confirmed} confirmed</span>}
+                      {reserved > 0 && <span className="text-yellow-500 ml-2">{reserved} pending</span>}
+                      {confirmed === 0 && reserved === 0 && '0 boxes'}
+                    </span>
+                    {confirmDelete === p.id ? (
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => deleteUser(p.id)}
+                          disabled={loading === `delete-${p.id}`}
+                          className="bg-ne-red text-white font-bold px-2 py-0.5 rounded text-xs hover:brightness-110 disabled:opacity-50"
+                        >
+                          {loading === `delete-${p.id}` ? '...' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDelete(null)}
+                          className="bg-surface text-muted px-2 py-0.5 rounded text-xs hover:text-foreground"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDelete(p.id)}
+                        className="text-muted hover:text-ne-red transition text-xs px-1"
+                        title="Delete user"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}

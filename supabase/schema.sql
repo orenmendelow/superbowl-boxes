@@ -83,10 +83,13 @@ ALTER TABLE boxes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE quarter_results ENABLE ROW LEVEL SECURITY;
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
--- Profiles: anyone can read, users can update own
+-- Profiles: anyone can read, users can update own, admins can delete
 CREATE POLICY "profiles_select" ON profiles FOR SELECT USING (true);
 CREATE POLICY "profiles_insert" ON profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "profiles_update" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "profiles_delete_admin" ON profiles FOR DELETE USING (
+  EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
+);
 
 -- Game: anyone can read, admins can update
 CREATE POLICY "game_select" ON game FOR SELECT USING (true);
@@ -112,9 +115,12 @@ CREATE POLICY "qr_update" ON quarter_results FOR UPDATE USING (
   EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
 );
 
--- Admins: any authenticated user can check if they are admin
+-- Admins: any authenticated user can check if they are admin, admins can delete
 CREATE POLICY "admins_select" ON admins FOR SELECT USING (
   auth.uid() = user_id
+);
+CREATE POLICY "admins_delete" ON admins FOR DELETE USING (
+  EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
 );
 
 -- =============================================
