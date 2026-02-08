@@ -88,4 +88,21 @@ export function calculatePrice(count: number): number {
   return count * 5;
 }
 
+/**
+ * Calculate the incremental cost when a user upgrades their box count.
+ * They already paid for `existingCount` boxes; now they want `additionalCount` more.
+ * Charge = price(total) - price(existing).
+ *
+ * Example: 10 confirmed ($35 paid) + 10 new → price(20) - price(10) = $60 - $35 = $25.
+ */
+export function calculateUpgradePrice(
+  existingCount: number,
+  additionalCount: number,
+): number {
+  if (additionalCount <= 0) return 0;
+  const totalPrice = calculatePrice(existingCount + additionalCount);
+  const alreadyPaid = calculatePrice(existingCount);
+  return totalPrice - alreadyPaid;
+}
+
 

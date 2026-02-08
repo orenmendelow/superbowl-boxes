@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Box, Game, calculatePrice, QuarterResult } from '@/lib/types';
+import { Box, Game, calculatePrice, calculateUpgradePrice, QuarterResult } from '@/lib/types';
 
 // 20 distinct player colors — visible on dark backgrounds, border/bg/text all match
 const PLAYER_COLORS = [
@@ -102,7 +102,14 @@ export default function Grid({
   );
 
   const selectedCount = selectedIds.size;
-  const totalPrice = calculatePrice(selectedCount);
+
+  // Already-confirmed boxes the user has paid for
+  const userConfirmedCount = boxes.filter(
+    (b) => b.user_id === userId && b.status === 'confirmed'
+  ).length;
+
+  // Price for just the new selection, accounting for volume discounts on total
+  const totalPrice = calculateUpgradePrice(userConfirmedCount, selectedCount);
 
   // Determine the current "winning" cell based on live scores
   const winningRow = currentHomeScore !== undefined ? currentHomeScore % 10 : null;
@@ -216,8 +223,14 @@ export default function Grid({
     quarterWinners.get(key)!.push(qr.quarter);
   });
 
-  const venmoNote = `SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} boxes`;
-  const venmoAmount = calculatePrice(userReservedCount) || totalPrice;
+  // For Venmo: charge only the incremental cost (total with new boxes minus what they already paid)
+  const venmoAmount = userReservedCount > 0
+    ? calculateUpgradePrice(userConfirmedCount, userReservedCount)
+    : totalPrice;
+  const totalBoxesAfter = userConfirmedCount + (userReservedCount || selectedCount);
+  const venmoNote = userConfirmedCount > 0
+    ? `SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} new (${totalBoxesAfter} total)`
+    : `SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} boxes`;
   const venmoUrl = new URL('https://venmo.com/orenmendelow');
   venmoUrl.searchParams.set('txn', 'pay');
   venmoUrl.searchParams.set('amount', String(venmoAmount));
@@ -405,11 +418,13 @@ export default function Grid({
             {selectedCount} box{selectedCount !== 1 ? 'es' : ''} selected · <span className="text-sea-green">${totalPrice}</span>
           </p>
           <p className="text-xs text-muted">
-            {selectedCount >= 20
-              ? `Bulk pricing: $3/box`
-              : selectedCount >= 10
-                ? `Bulk pricing: $3.50/box`
-                : `$5/box · Get 10 for $35 · 20 for $60`}
+            {userConfirmedCount > 0
+              ? `You have ${userConfirmedCount} box${userConfirmedCount !== 1 ? 'es' : ''} · ${userConfirmedCount + selectedCount} total → $${calculatePrice(userConfirmedCount + selectedCount)} (pay $${totalPrice} more)`
+              : selectedCount >= 20
+                ? `Bulk pricing: $3/box`
+                : selectedCount >= 10
+                  ? `Bulk pricing: $3.50/box`
+                  : `$5/box · Get 10 for $35 · 20 for $60`}
           </p>
           <button
             onClick={reserveBoxes}
@@ -426,7 +441,9 @@ export default function Grid({
         <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 text-center space-y-4">
           <h3 className="text-lg font-bold text-yellow-500">{userReservedCount} Box{userReservedCount !== 1 ? 'es' : ''} Pending Payment</h3>
           <p className="text-sm text-muted">
-            Complete your payment via Venmo. Admin will confirm once received.
+            {userConfirmedCount > 0
+              ? `You already have ${userConfirmedCount} confirmed box${userConfirmedCount !== 1 ? 'es' : ''}. Pay the upgrade difference below.`
+              : 'Complete your payment via Venmo. Admin will confirm once received.'}
           </p>
           <div className="flex flex-col items-center gap-3">
             <a
