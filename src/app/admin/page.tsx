@@ -1,0 +1,72 @@
+import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import AdminDashboard from './AdminDashboard';
+import { Box, Game, QuarterResult, Profile } from '@/lib/types';
+
+const GAME_ID = '00000000-0000-0000-0000-000000000001';
+
+export default async function AdminPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) redirect('/login?redirect=/admin');
+
+  // Check if admin
+  const { data: adminRow } = await supabase
+    .from('admins')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .single();
+
+  if (!adminRow) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-4xl">🚫</p>
+          <h1 className="text-2xl font-bold">Access Denied</h1>
+          <p className="text-muted">You are not an admin.</p>
+          <p className="text-xs text-muted">Your user ID: {user.id}</p>
+          <a href="/board" className="text-sea-green hover:underline text-sm">← Back to Board</a>
+        </div>
+      </div>
+    );
+  }
+
+  // Fetch game
+  const { data: game } = await supabase
+    .from('game')
+    .select('*')
+    .eq('id', GAME_ID)
+    .single();
+
+  // Fetch boxes with profiles
+  const { data: boxes } = await supabase
+    .from('boxes')
+    .select('*, profiles(full_name, email)')
+    .eq('game_id', GAME_ID)
+    .order('row_index')
+    .order('col_index');
+
+  // Fetch quarter results
+  const { data: quarterResults } = await supabase
+    .from('quarter_results')
+    .select('*, profiles:winning_user_id(full_name)')
+    .eq('game_id', GAME_ID)
+    .order('quarter');
+
+  // Fetch all profiles
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('*')
+    .order('full_name');
+
+  return (
+    <AdminDashboard
+      game={game as Game}
+      boxes={(boxes as Box[]) || []}
+      quarterResults={(quarterResults as QuarterResult[]) || []}
+      profiles={(profiles as Profile[]) || []}
+      gameId={GAME_ID}
+    />
+  );
+}
