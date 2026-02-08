@@ -4,32 +4,32 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Box, Game, calculatePrice, QuarterResult } from '@/lib/types';
 
-// 20 distinct player colors — muted tones that fit the dark navy/green site palette
+// 20 distinct player colors — visible on dark backgrounds, border/bg/text all match
 const PLAYER_COLORS = [
-  { text: '#5bb450', bg: 'rgba(91,180,80,0.15)' },   // green
-  { text: '#4a9ec5', bg: 'rgba(74,158,197,0.15)' },   // steel blue
-  { text: '#c75d3a', bg: 'rgba(199,93,58,0.15)' },    // burnt sienna
-  { text: '#8e7cc3', bg: 'rgba(142,124,195,0.15)' },   // muted purple
-  { text: '#c4953a', bg: 'rgba(196,149,58,0.15)' },    // amber
-  { text: '#4db89e', bg: 'rgba(77,184,158,0.15)' },    // sage teal
-  { text: '#c75480', bg: 'rgba(199,84,128,0.15)' },    // dusty rose
-  { text: '#5f8fb4', bg: 'rgba(95,143,180,0.15)' },    // slate blue
-  { text: '#a1785c', bg: 'rgba(161,120,92,0.15)' },    // tan
-  { text: '#7ba05b', bg: 'rgba(123,160,91,0.15)' },    // olive
-  { text: '#b56748', bg: 'rgba(181,103,72,0.15)' },    // terra cotta
-  { text: '#6b9dad', bg: 'rgba(107,157,173,0.15)' },   // cadet blue
-  { text: '#9b6b9e', bg: 'rgba(155,107,158,0.15)' },   // mauve
-  { text: '#6dab8e', bg: 'rgba(109,171,142,0.15)' },   // sea foam
-  { text: '#c27a5b', bg: 'rgba(194,122,91,0.15)' },    // copper
-  { text: '#7e92b0', bg: 'rgba(126,146,176,0.15)' },   // cool grey
-  { text: '#9aad4b', bg: 'rgba(154,173,75,0.15)' },    // moss
-  { text: '#b07a9b', bg: 'rgba(176,122,155,0.15)' },   // plum
-  { text: '#5da0a0', bg: 'rgba(93,160,160,0.15)' },    // teal grey
-  { text: '#c4884a', bg: 'rgba(196,136,74,0.15)' },    // caramel
+  { text: '#6dce62', bg: 'rgba(109,206,98,0.18)', border: 'rgba(109,206,98,0.45)' },   // green
+  { text: '#5db8e0', bg: 'rgba(93,184,224,0.18)', border: 'rgba(93,184,224,0.45)' },    // sky blue
+  { text: '#e0734f', bg: 'rgba(224,115,79,0.18)', border: 'rgba(224,115,79,0.45)' },    // coral
+  { text: '#a68ee0', bg: 'rgba(166,142,224,0.18)', border: 'rgba(166,142,224,0.45)' },  // lavender
+  { text: '#e0b84f', bg: 'rgba(224,184,79,0.18)', border: 'rgba(224,184,79,0.45)' },    // gold
+  { text: '#5ccead', bg: 'rgba(92,206,173,0.18)', border: 'rgba(92,206,173,0.45)' },    // mint
+  { text: '#e06690', bg: 'rgba(224,102,144,0.18)', border: 'rgba(224,102,144,0.45)' },  // pink
+  { text: '#73a8d4', bg: 'rgba(115,168,212,0.18)', border: 'rgba(115,168,212,0.45)' },  // steel
+  { text: '#c99b6d', bg: 'rgba(201,155,109,0.18)', border: 'rgba(201,155,109,0.45)' },  // tan
+  { text: '#8fbf6a', bg: 'rgba(143,191,106,0.18)', border: 'rgba(143,191,106,0.45)' },  // olive
+  { text: '#d4785a', bg: 'rgba(212,120,90,0.18)', border: 'rgba(212,120,90,0.45)' },    // terra cotta
+  { text: '#7bbfc8', bg: 'rgba(123,191,200,0.18)', border: 'rgba(123,191,200,0.45)' },  // teal
+  { text: '#b580b8', bg: 'rgba(181,128,184,0.18)', border: 'rgba(181,128,184,0.45)' },  // mauve
+  { text: '#7ec4a0', bg: 'rgba(126,196,160,0.18)', border: 'rgba(126,196,160,0.45)' },  // sea foam
+  { text: '#d9936d', bg: 'rgba(217,147,109,0.18)', border: 'rgba(217,147,109,0.45)' },  // copper
+  { text: '#95a8c8', bg: 'rgba(149,168,200,0.18)', border: 'rgba(149,168,200,0.45)' },  // slate
+  { text: '#b3c45e', bg: 'rgba(179,196,94,0.18)', border: 'rgba(179,196,94,0.45)' },   // lime
+  { text: '#c88fb5', bg: 'rgba(200,143,181,0.18)', border: 'rgba(200,143,181,0.45)' },  // plum
+  { text: '#6dbdbd', bg: 'rgba(109,189,189,0.18)', border: 'rgba(109,189,189,0.45)' },  // cyan
+  { text: '#daa05e', bg: 'rgba(218,160,94,0.18)', border: 'rgba(218,160,94,0.45)' },   // amber
 ];
 
-function getPlayerColorMap(boxes: Box[]): Map<string, { text: string; bg: string }> {
-  const colorMap = new Map<string, { text: string; bg: string }>();
+function getPlayerColorMap(boxes: Box[]): Map<string, { text: string; bg: string; border: string }> {
+  const colorMap = new Map<string, { text: string; bg: string; border: string }>();
   let idx = 0;
 
   for (const box of boxes) {
@@ -325,23 +325,20 @@ export default function Grid({
                 if (isSelected) {
                   bgClass = 'bg-sea-green/30 cursor-pointer active:scale-95';
                   borderClass = 'border-2 border-sea-green';
-                } else if (isConfirmed && isMine) {
+                } else if ((isConfirmed || isReserved) && isMine) {
+                  // Your boxes: clean white — stands out, no color conflict
                   bgClass = '';
-                  bgStyle = { background: playerColor?.bg };
-                  borderClass = 'border-2 border-sea-green';
-                } else if (isConfirmed) {
+                  bgStyle = { background: 'rgba(255,255,255,0.12)' };
+                  borderClass = 'border-2';
+                  bgStyle.borderColor = 'rgba(255,255,255,0.4)';
+                } else if (isConfirmed || isReserved) {
+                  // Other people's boxes: uniform player color (bg + border)
                   bgClass = '';
-                  bgStyle = { background: playerColor?.bg || 'rgba(16,185,129,0.12)' };
-                  borderClass = 'border border-border';
-                } else if (isReserved && isMine) {
-                  bgClass = '';
-                  bgStyle = { background: playerColor?.bg };
-                  borderClass = 'border-2 border-yellow-500';
-                  animClass = 'animate-pulse-gold';
-                } else if (isReserved) {
-                  bgClass = '';
-                  bgStyle = { background: playerColor?.bg || 'rgba(234,179,8,0.08)' };
-                  borderClass = 'border border-yellow-700/30';
+                  bgStyle = {
+                    background: playerColor?.bg || 'rgba(255,255,255,0.06)',
+                    borderColor: playerColor?.border || 'rgba(255,255,255,0.15)',
+                  };
+                  borderClass = 'border';
                 } else if (!isAvailable) {
                   bgClass = 'bg-surface';
                   borderClass = 'border border-border';
@@ -350,9 +347,11 @@ export default function Grid({
                 if (isLiveWinner) {
                   animClass = 'animate-pulse-green';
                   borderClass = 'border-2 border-sea-green';
+                  bgStyle.borderColor = undefined; // let the class handle it
                 }
                 if (wonQuarters) {
                   borderClass = 'border-2 border-yellow-400';
+                  bgStyle.borderColor = undefined;
                 }
 
                 const displayName = box.profiles?.full_name
@@ -383,7 +382,7 @@ export default function Grid({
                     {displayName && (
                       <span
                         className="font-medium truncate w-full px-px text-center"
-                        style={{ color: playerColor?.text }}
+                        style={{ color: isMine ? '#ffffff' : playerColor?.text }}
                       >
                         {displayName}
                       </span>
