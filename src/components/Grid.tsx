@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Box, Game, calculatePrice, calculateUpgradePrice, QuarterResult } from '@/lib/types';
+import { Box, Game, calculatePrice, calculateUpgradePrice, calculatePot, QuarterResult } from '@/lib/types';
 
 // 20 distinct player colors — visible on dark backgrounds, border/bg/text all match
 const PLAYER_COLORS = [
@@ -213,7 +213,7 @@ export default function Grid({
   const confirmedCount = boxes.filter((b) => b.status === 'confirmed').length;
   const reservedCount = boxes.filter((b) => b.status === 'reserved').length;
   const availableCount = 100 - confirmedCount - reservedCount;
-  const totalPot = calculatePrice(confirmedCount + reservedCount);
+  const totalPot = calculatePot(boxes);
 
   // Quarter winning rows
   const quarterWinners = new Map<string, number[]>();

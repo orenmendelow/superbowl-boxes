@@ -89,6 +89,24 @@ export function calculatePrice(count: number): number {
 }
 
 /**
+ * Calculate the actual pot by summing per-user prices.
+ * Each user's price is based on their own box count (volume discounts apply per-user, not globally).
+ */
+export function calculatePot(boxes: { user_id: string | null; status: string }[]): number {
+  const countByUser = new Map<string, number>();
+  for (const b of boxes) {
+    if (b.user_id && (b.status === 'confirmed' || b.status === 'reserved')) {
+      countByUser.set(b.user_id, (countByUser.get(b.user_id) || 0) + 1);
+    }
+  }
+  let total = 0;
+  for (const count of countByUser.values()) {
+    total += calculatePrice(count);
+  }
+  return total;
+}
+
+/**
  * Calculate the incremental cost when a user upgrades their box count.
  * They already paid for `existingCount` boxes; now they want `additionalCount` more.
  * Charge = price(total) - price(existing).
