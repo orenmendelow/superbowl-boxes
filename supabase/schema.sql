@@ -112,9 +112,9 @@ CREATE POLICY "qr_update" ON quarter_results FOR UPDATE USING (
   EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
 );
 
--- Admins: only admins can read
+-- Admins: any authenticated user can check if they are admin
 CREATE POLICY "admins_select" ON admins FOR SELECT USING (
-  EXISTS (SELECT 1 FROM admins WHERE user_id = auth.uid())
+  auth.uid() = user_id
 );
 
 -- =============================================

@@ -26,6 +26,7 @@ export default function Grid({
   const [boxes, setBoxes] = useState<Box[]>(initialBoxes);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [reserving, setReserving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
   const [showVenmo, setShowVenmo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
@@ -109,6 +110,50 @@ export default function Grid({
     }
   }
 
+  async function cancelMyReservations() {
+    if (!userId) return;
+    setCancelling(true);
+    setError(null);
+
+    try {
+      const myReservedIds = boxes
+        .filter((b) => b.user_id === userId && b.status === 'reserved')
+        .map((b) => b.id);
+
+      if (myReservedIds.length === 0) return;
+
+      const { error: updateError } = await supabase
+        .from('boxes')
+        .update({
+          user_id: null,
+          status: 'available',
+          reserved_at: null,
+        })
+        .in('id', myReservedIds)
+        .eq('status', 'reserved');
+
+      if (updateError) throw updateError;
+
+      setShowVenmo(false);
+      // Optimistic update
+      setBoxes((prev) =>
+        prev.map((b) =>
+          myReservedIds.includes(b.id)
+            ? { ...b, user_id: null, status: 'available' as const, reserved_at: null, profiles: null }
+            : b
+        )
+      );
+    } catch (err: any) {
+      setError(err.message || 'Failed to cancel reservations');
+    } finally {
+      setCancelling(false);
+    }
+  }
+
+  const userReservedCount = boxes.filter(
+    (b) => b.user_id === userId && b.status === 'reserved'
+  ).length;
+
   const userBoxCount = boxes.filter(
     (b) => b.user_id === userId && (b.status === 'reserved' || b.status === 'confirmed')
   ).length;
@@ -126,8 +171,8 @@ export default function Grid({
     quarterWinners.get(key)!.push(qr.quarter);
   });
 
-  const venmoNote = encodeURIComponent(`SB Boxes - ${userName || 'Guest'} - ${selectedCount || userBoxCount} boxes`);
-  const venmoAmount = totalPrice || calculatePrice(userBoxCount);
+  const venmoNote = encodeURIComponent(`SB Boxes - ${userName || 'Guest'} - ${userReservedCount || selectedCount} boxes`);
+  const venmoAmount = calculatePrice(userReservedCount) || totalPrice;
 
   return (
     <div className="space-y-4">
@@ -171,148 +216,139 @@ export default function Grid({
       )}
 
       {/* Grid */}
-      <div className="overflow-auto grid-scroll">
-        <div className="min-w-[360px] sm:min-w-[500px]">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr>
-                <th className="w-8 sm:w-12 p-1">
-                  <div className="text-[10px] sm:text-xs text-muted">
-                    <span className="text-ne-red">NE</span>→<br/>
-                    <span className="text-sea-green">SEA</span>↓
-                  </div>
-                </th>
-                {Array.from({ length: 10 }, (_, i) => (
-                  <th key={i} className="p-1 text-center">
-                    <div
-                      className="rounded-md py-1 text-xs sm:text-sm font-bold"
-                      style={{ background: '#c60c30', color: 'white' }}
-                    >
-                      {game.row_numbers ? game.row_numbers[i] : '?'}
-                    </div>
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: 10 }, (_, rowIdx) => (
-                <tr key={rowIdx}>
-                  <td className="p-1">
-                    <div
-                      className="rounded-md py-1 text-center text-xs sm:text-sm font-bold"
-                      style={{ background: '#69be28', color: '#002a5c' }}
-                    >
-                      {game.col_numbers ? game.col_numbers[rowIdx] : '?'}
-                    </div>
-                  </td>
-                  {Array.from({ length: 10 }, (_, colIdx) => {
-                    const box = getBox(rowIdx, colIdx);
-                    if (!box) return <td key={colIdx} className="p-0.5" />;
+      <div className="overflow-auto grid-scroll -mx-2 px-2 pb-2">
+        <div
+          className="grid gap-[2px] sm:gap-1 mx-auto"
+          style={{
+            gridTemplateColumns: `28px repeat(10, 1fr)`,
+            gridTemplateRows: `28px repeat(10, 1fr)`,
+            maxWidth: '540px',
+          }}
+        >
+          {/* Corner cell */}
+          <div className="flex items-center justify-center text-[8px] sm:text-[10px] text-muted leading-tight text-center">
+            <span><span className="text-ne-red">NE</span>→<br/><span className="text-sea-green">SEA</span>↓</span>
+          </div>
 
-                    const isSelected = selectedIds.has(box.id);
-                    const isMine = box.user_id === userId && userId !== null;
-                    const isAvailable = box.status === 'available';
-                    const isReserved = box.status === 'reserved';
-                    const isConfirmed = box.status === 'confirmed';
+          {/* Column headers (NE / home) */}
+          {Array.from({ length: 10 }, (_, i) => (
+            <div
+              key={`col-${i}`}
+              className="flex items-center justify-center rounded text-[10px] sm:text-xs font-bold"
+              style={{ background: '#c60c30', color: 'white' }}
+            >
+              {game.row_numbers ? game.row_numbers[i] : '?'}
+            </div>
+          ))}
 
-                    // Check if this is the live "winning" box
-                    const actualRow = game.row_numbers ? game.row_numbers[rowIdx] : null;
-                    const actualCol = game.col_numbers ? game.col_numbers[colIdx] : null;
-                    const isLiveWinner =
-                      winningRow !== null &&
-                      winningCol !== null &&
-                      actualRow === winningRow &&
-                      actualCol === winningCol;
+          {/* Rows */}
+          {Array.from({ length: 10 }, (_, rowIdx) => (
+            <>
+              {/* Row header (SEA / away) */}
+              <div
+                key={`row-${rowIdx}`}
+                className="flex items-center justify-center rounded text-[10px] sm:text-xs font-bold"
+                style={{ background: '#69be28', color: '#002a5c' }}
+              >
+                {game.col_numbers ? game.col_numbers[rowIdx] : '?'}
+              </div>
 
-                    // Check if this box won a quarter
-                    const qKey = actualRow !== null && actualCol !== null
-                      ? `${actualRow}-${actualCol}`
-                      : null;
-                    const wonQuarters = qKey ? quarterWinners.get(qKey) : null;
+              {/* Cells */}
+              {Array.from({ length: 10 }, (_, colIdx) => {
+                const box = getBox(rowIdx, colIdx);
+                if (!box) return <div key={`${rowIdx}-${colIdx}`} />;
 
-                    let bgClass = 'bg-surface-2 hover:bg-border cursor-pointer';
-                    let borderClass = 'border border-border';
-                    let animClass = '';
+                const isSelected = selectedIds.has(box.id);
+                const isMine = box.user_id === userId && userId !== null;
+                const isAvailable = box.status === 'available';
+                const isReserved = box.status === 'reserved';
+                const isConfirmed = box.status === 'confirmed';
 
-                    if (isSelected) {
-                      bgClass = 'bg-sea-green/30 cursor-pointer';
-                      borderClass = 'border-2 border-sea-green';
-                    } else if (isConfirmed && isMine) {
-                      bgClass = 'bg-sea-green/20';
-                      borderClass = 'border-2 border-sea-green';
-                    } else if (isConfirmed) {
-                      bgClass = 'bg-emerald-900/40';
-                      borderClass = 'border border-emerald-700/50';
-                    } else if (isReserved && isMine) {
-                      bgClass = 'bg-yellow-500/20';
-                      borderClass = 'border-2 border-yellow-500';
-                      animClass = 'animate-pulse-gold';
-                    } else if (isReserved) {
-                      bgClass = 'bg-yellow-900/20';
-                      borderClass = 'border border-yellow-700/30';
-                    } else if (!isAvailable) {
-                      bgClass = 'bg-surface';
-                      borderClass = 'border border-border';
+                const actualRow = game.row_numbers ? game.row_numbers[rowIdx] : null;
+                const actualCol = game.col_numbers ? game.col_numbers[colIdx] : null;
+                const isLiveWinner =
+                  winningRow !== null &&
+                  winningCol !== null &&
+                  actualRow === winningRow &&
+                  actualCol === winningCol;
+
+                const qKey = actualRow !== null && actualCol !== null
+                  ? `${actualRow}-${actualCol}`
+                  : null;
+                const wonQuarters = qKey ? quarterWinners.get(qKey) : null;
+
+                let bgClass = 'bg-surface-2 hover:bg-border cursor-pointer active:scale-95';
+                let borderClass = 'border border-border';
+                let animClass = '';
+
+                if (isSelected) {
+                  bgClass = 'bg-sea-green/30 cursor-pointer active:scale-95';
+                  borderClass = 'border-2 border-sea-green';
+                } else if (isConfirmed && isMine) {
+                  bgClass = 'bg-sea-green/20';
+                  borderClass = 'border-2 border-sea-green';
+                } else if (isConfirmed) {
+                  bgClass = 'bg-emerald-900/40';
+                  borderClass = 'border border-emerald-700/50';
+                } else if (isReserved && isMine) {
+                  bgClass = 'bg-yellow-500/20';
+                  borderClass = 'border-2 border-yellow-500';
+                  animClass = 'animate-pulse-gold';
+                } else if (isReserved) {
+                  bgClass = 'bg-yellow-900/20';
+                  borderClass = 'border border-yellow-700/30';
+                } else if (!isAvailable) {
+                  bgClass = 'bg-surface';
+                  borderClass = 'border border-border';
+                }
+
+                if (isLiveWinner) {
+                  animClass = 'animate-pulse-green';
+                  borderClass = 'border-2 border-sea-green';
+                }
+                if (wonQuarters) {
+                  borderClass = 'border-2 border-yellow-400';
+                }
+
+                const displayName = box.profiles?.full_name
+                  ? box.profiles.full_name.split(' ')[0]
+                  : null;
+
+                return (
+                  <button
+                    key={`${rowIdx}-${colIdx}`}
+                    onClick={() => isAvailable && toggleBox(box)}
+                    disabled={!isAvailable && !isSelected}
+                    className={`
+                      aspect-square rounded flex flex-col items-center justify-center
+                      text-[7px] sm:text-[9px] leading-tight transition-all overflow-hidden
+                      ${bgClass} ${borderClass} ${animClass}
+                      ${isAvailable ? '' : 'cursor-default'}
+                    `}
+                    title={
+                      box.profiles?.full_name
+                        ? `${box.profiles.full_name} (${box.status})`
+                        : isAvailable ? 'Tap to select' : ''
                     }
-
-                    if (isLiveWinner) {
-                      animClass = 'animate-pulse-green';
-                      borderClass = 'border-2 border-sea-green';
-                    }
-
-                    if (wonQuarters) {
-                      borderClass = 'border-2 border-yellow-400';
-                    }
-
-                    const displayName = box.profiles?.full_name
-                      ? box.profiles.full_name.split(' ')[0]
-                      : null;
-
-                    return (
-                      <td key={colIdx} className="p-0.5">
-                        <button
-                          onClick={() => isAvailable && toggleBox(box)}
-                          disabled={!isAvailable && !isSelected}
-                          className={`
-                            w-full aspect-square rounded-md flex flex-col items-center justify-center
-                            text-[8px] sm:text-[10px] leading-tight transition-all
-                            ${bgClass} ${borderClass} ${animClass}
-                            ${isAvailable ? '' : 'cursor-default'}
-                          `}
-                          title={
-                            box.profiles?.full_name
-                              ? `${box.profiles.full_name} (${box.status})`
-                              : isAvailable
-                                ? 'Click to select'
-                                : ''
-                          }
-                        >
-                          {wonQuarters && (
-                            <span className="text-[7px] text-yellow-400 font-bold">
-                              🏆Q{wonQuarters.join(',')}
-                            </span>
-                          )}
-                          {displayName && (
-                            <span className={`font-medium truncate w-full px-0.5 ${
-                              isMine ? 'text-sea-green' : 'text-foreground/70'
-                            }`}>
-                              {displayName}
-                            </span>
-                          )}
-                          {isReserved && (
-                            <span className="text-yellow-500 text-[7px]">pending</span>
-                          )}
-                          {isSelected && (
-                            <span className="text-sea-green text-[7px] font-bold">✓</span>
-                          )}
-                        </button>
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  >
+                    {wonQuarters && (
+                      <span className="text-[6px] text-yellow-400 font-bold leading-none">🏆</span>
+                    )}
+                    {displayName && (
+                      <span className={`font-medium truncate w-full px-px text-center ${
+                        isMine ? 'text-sea-green' : 'text-foreground/70'
+                      }`}>
+                        {displayName}
+                      </span>
+                    )}
+                    {isSelected && (
+                      <span className="text-sea-green font-bold leading-none">✓</span>
+                    )}
+                  </button>
+                );
+              })}
+            </>
+          ))}
         </div>
       </div>
 
@@ -339,17 +375,17 @@ export default function Grid({
         </div>
       )}
 
-      {/* Venmo payment panel */}
-      {showVenmo && (
-        <div className="bg-surface border border-border rounded-xl p-6 text-center space-y-4">
-          <h3 className="text-lg font-bold text-sea-green">✅ Boxes Reserved!</h3>
+      {/* Pending boxes / Venmo payment panel */}
+      {(showVenmo || userReservedCount > 0) && (
+        <div className="bg-surface border border-border rounded-xl p-4 sm:p-6 text-center space-y-4">
+          <h3 className="text-lg font-bold text-yellow-500">⏳ {userReservedCount} Box{userReservedCount !== 1 ? 'es' : ''} Pending Payment</h3>
           <p className="text-sm text-muted">
-            Complete your payment via Venmo to confirm your boxes. Admin will confirm once received.
+            Complete your payment via Venmo. Admin will confirm once received.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col items-center gap-3">
             <a
               href={`venmo://paycharge?txn=pay&recipients=orenmendelow&amount=${venmoAmount}&note=${venmoNote}`}
-              className="bg-[#008CFF] text-white font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition inline-block"
+              className="bg-[#008CFF] text-white font-bold px-6 py-2.5 rounded-lg hover:brightness-110 transition inline-block w-full sm:w-auto"
             >
               Pay ${venmoAmount} on Venmo
             </a>
@@ -358,16 +394,19 @@ export default function Grid({
               target="_blank"
               className="text-sm text-muted underline"
             >
-              Open Venmo Web
+              Open Venmo Web →
             </a>
           </div>
           <p className="text-xs text-muted">Venmo: @orenmendelow</p>
-          <button
-            onClick={() => setShowVenmo(false)}
-            className="text-xs text-muted hover:text-foreground"
-          >
-            Dismiss
-          </button>
+          <div className="border-t border-border pt-3">
+            <button
+              onClick={cancelMyReservations}
+              disabled={cancelling}
+              className="text-ne-red text-sm hover:underline disabled:opacity-50"
+            >
+              {cancelling ? 'Cancelling...' : '✕ Cancel My Reservations'}
+            </button>
+          </div>
         </div>
       )}
 
