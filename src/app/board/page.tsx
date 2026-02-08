@@ -13,6 +13,7 @@ export default async function BoardPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let userName: string | null = null;
+  let isAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -20,6 +21,13 @@ export default async function BoardPage() {
       .eq('id', user.id)
       .single();
     userName = profile?.full_name || null;
+
+    const { data: adminRow } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+    isAdmin = !!adminRow;
   }
 
   // Fetch game
@@ -47,7 +55,7 @@ export default async function BoardPage() {
   if (!game || !boxes) {
     return (
       <div className="min-h-screen flex flex-col">
-        <Header userName={userName} />
+        <Header userName={userName} isAdmin={isAdmin} />
         <main className="flex-1 flex items-center justify-center">
           <p className="text-muted">Game not found. Has the database been set up?</p>
         </main>
@@ -57,7 +65,7 @@ export default async function BoardPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header userName={userName} />
+      <Header userName={userName} isAdmin={isAdmin} />
 
       <main className="flex-1 max-w-5xl mx-auto px-2 sm:px-4 py-4 sm:py-8 space-y-6">
         <div className="text-center">

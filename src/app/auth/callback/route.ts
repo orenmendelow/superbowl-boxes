@@ -29,10 +29,17 @@ export async function GET(request: Request) {
   }
 
   if (!authError && user) {
-    // Upsert profile
+    // Upsert profile — prefer Google profile name, then URL param, then fallback
+    const fullName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      name ||
+      user.email?.split('@')[0] ||
+      'Anonymous';
+
     await supabase.from('profiles').upsert({
       id: user.id,
-      full_name: name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'Anonymous',
+      full_name: fullName,
       email: user.email || '',
     }, { onConflict: 'id' });
 

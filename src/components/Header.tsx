@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
-export default function Header({ userName }: { userName?: string | null }) {
+export default function Header({ userName, isAdmin }: { userName?: string | null; isAdmin?: boolean }) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -28,6 +28,11 @@ export default function Header({ userName }: { userName?: string | null }) {
           <a href="/board" className="text-muted hover:text-foreground transition-colors">
             Board
           </a>
+          {isAdmin && (
+            <a href="/admin" className="text-muted hover:text-foreground transition-colors">
+              Admin
+            </a>
+          )}
           {userName ? (
             <>
               <span className="text-muted">|</span>

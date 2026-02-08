@@ -9,6 +9,7 @@ export default async function Home() {
   const { data: { user } } = await supabase.auth.getUser();
 
   let userName: string | null = null;
+  let isAdmin = false;
   if (user) {
     const { data: profile } = await supabase
       .from('profiles')
@@ -16,6 +17,13 @@ export default async function Home() {
       .eq('id', user.id)
       .single();
     userName = profile?.full_name || null;
+
+    const { data: adminRow } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+    isAdmin = !!adminRow;
   }
 
   // Get box counts
@@ -33,7 +41,7 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header userName={userName} />
+      <Header userName={userName} isAdmin={isAdmin} />
 
       <main className="flex-1">
         {/* Hero Section */}
