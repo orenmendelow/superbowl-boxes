@@ -6,8 +6,15 @@ export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
 export default function OGImage() {
-  // 4x4 mini grid to represent the boxes concept
-  const gridCells = Array.from({ length: 16 });
+  // 10x10 grid to match the actual board
+  const rows = 10;
+  const cols = 10;
+  // Highlight pattern — scattered claimed boxes for visual interest
+  const highlighted = new Set([
+    0, 3, 7, 12, 15, 18, 21, 24, 29, 33, 36, 41, 44, 48,
+    52, 55, 58, 61, 65, 70, 73, 77, 82, 85, 88, 91, 94, 99,
+  ]);
+  const redCells = new Set([7, 29, 52, 77, 94]);
 
   return new ImageResponse(
     (
@@ -16,7 +23,6 @@ export default function OGImage() {
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#0a0a0a',
@@ -25,85 +31,126 @@ export default function OGImage() {
           overflow: 'hidden',
         }}
       >
-        {/* Subtle border accent at top */}
+        {/* Background glow — green */}
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 4,
-            display: 'flex',
+            top: -100,
+            left: -100,
+            width: 500,
+            height: 500,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(105,190,40,0.12) 0%, transparent 70%)',
           }}
-        >
-          <div style={{ flex: 1, backgroundColor: '#69be28' }} />
-          <div style={{ flex: 1, backgroundColor: '#c60c30' }} />
-        </div>
+        />
+        {/* Background glow — red */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -100,
+            right: -100,
+            width: 500,
+            height: 500,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(198,12,48,0.1) 0%, transparent 70%)',
+          }}
+        />
 
-        {/* Main content */}
+        {/* Left side — text content */}
         <div
           style={{
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            gap: 32,
+            gap: 24,
+            paddingLeft: 80,
+            flex: 1,
+            zIndex: 1,
           }}
         >
-          {/* Title */}
+          {/* Super Bowl badge */}
           <div
             style={{
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               gap: 8,
+              fontSize: 14,
+              fontWeight: 700,
+              letterSpacing: 3,
+              textTransform: 'uppercase',
+              color: '#888888',
             }}
           >
-            <div style={{ display: 'flex', gap: 16, fontSize: 72, fontWeight: 800, letterSpacing: -2 }}>
-              <span style={{ color: '#69be28' }}>SB</span>
-              <span style={{ color: '#c60c30' }}>LX</span>
-              <span style={{ color: '#ededed' }}>Boxes</span>
-            </div>
-            <div style={{ display: 'flex', gap: 12, fontSize: 28, color: '#888888', fontWeight: 500 }}>
-              <span>Seahawks vs Patriots</span>
-              <span style={{ color: '#2a2a2a' }}>|</span>
-              <span>Feb 8, 2026</span>
+            SUPER BOWL LX
+          </div>
+
+          {/* Title */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', gap: 14, fontSize: 80, fontWeight: 800, letterSpacing: -3, lineHeight: 1 }}>
+              <span style={{ color: '#69be28' }}>SEA</span>
+              <span style={{ color: '#2a2a2a' }}>vs</span>
+              <span style={{ color: '#c60c30' }}>NE</span>
             </div>
           </div>
 
-          {/* Mini grid */}
+          {/* Subtitle */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ fontSize: 32, fontWeight: 700, color: '#ededed', letterSpacing: -1 }}>
+              Squares Pool
+            </div>
+            <div style={{ fontSize: 20, color: '#888888', fontWeight: 400 }}>
+              Feb 8, 2026 · $5/box
+            </div>
+          </div>
+
+          {/* Accent line */}
           <div
             style={{
               display: 'flex',
-              flexWrap: 'wrap',
-              width: 240,
-              height: 240,
-              gap: 6,
+              width: 120,
+              height: 3,
+              borderRadius: 2,
             }}
           >
-            {gridCells.map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: 54,
-                  height: 54,
-                  borderRadius: 6,
-                  backgroundColor:
-                    i === 0 || i === 5 || i === 10
-                      ? '#69be28'
-                      : i === 3 || i === 12
-                        ? 'rgba(198, 12, 48, 0.6)'
-                        : '#1e1e1e',
-                  border: '1px solid #2a2a2a',
-                  opacity: i === 0 || i === 5 || i === 10 || i === 3 || i === 12 ? 1 : 0.6,
-                }}
-              />
-            ))}
+            <div style={{ flex: 1, backgroundColor: '#69be28' }} />
+            <div style={{ flex: 1, backgroundColor: '#c60c30' }} />
           </div>
+        </div>
 
-          {/* CTA */}
-          <div style={{ fontSize: 22, color: '#69be28', fontWeight: 600 }}>
-            Pick your boxes — $5 each
-          </div>
+        {/* Right side — grid */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 3,
+            paddingRight: 60,
+            zIndex: 1,
+          }}
+        >
+          {Array.from({ length: rows }).map((_, row) => (
+            <div key={row} style={{ display: 'flex', gap: 3 }}>
+              {Array.from({ length: cols }).map((_, col) => {
+                const idx = row * cols + col;
+                const isGreen = highlighted.has(idx) && !redCells.has(idx);
+                const isRed = redCells.has(idx);
+                return (
+                  <div
+                    key={col}
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 4,
+                      backgroundColor: isGreen
+                        ? 'rgba(105,190,40,0.7)'
+                        : isRed
+                          ? 'rgba(198,12,48,0.5)'
+                          : '#141414',
+                      border: `1px solid ${isGreen ? 'rgba(105,190,40,0.3)' : isRed ? 'rgba(198,12,48,0.3)' : '#1e1e1e'}`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
     ),
