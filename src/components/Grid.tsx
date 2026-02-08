@@ -1,8 +1,46 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Box, Game, calculatePrice, QuarterResult } from '@/lib/types';
+
+// 20 distinct, readable colors for player names on a dark background
+const PLAYER_COLORS = [
+  '#FF6B6B', // coral red
+  '#4ECDC4', // teal
+  '#FFD93D', // golden yellow
+  '#6C5CE7', // purple
+  '#FF8A5C', // peach orange
+  '#A8E6CF', // mint green
+  '#F78FB3', // pink
+  '#3DC1D3', // cyan
+  '#E77F67', // salmon
+  '#778BEB', // periwinkle
+  '#F5CD79', // sand
+  '#63CDDA', // sky blue
+  '#CF6A87', // mauve
+  '#C4E538', // lime
+  '#FDA7DF', // light pink
+  '#58B19F', // jade
+  '#E15F41', // burnt orange
+  '#B8E994', // light green
+  '#82CCDD', // baby blue
+  '#D4A5A5', // dusty rose
+];
+
+function getPlayerColorMap(boxes: Box[]): Map<string, string> {
+  const uniqueUsers = new Map<string, string>(); // userId -> color
+  const seen = new Set<string>();
+
+  for (const box of boxes) {
+    if (box.user_id && !seen.has(box.user_id)) {
+      seen.add(box.user_id);
+      uniqueUsers.set(box.user_id, PLAYER_COLORS[seen.size - 1 % PLAYER_COLORS.length] || PLAYER_COLORS[(seen.size - 1) % PLAYER_COLORS.length]);
+    }
+  }
+
+  return uniqueUsers;
+}
 
 interface GridProps {
   initialBoxes: Box[];
@@ -30,6 +68,8 @@ export default function Grid({
   const [showVenmo, setShowVenmo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
+
+  const playerColorMap = useMemo(() => getPlayerColorMap(boxes), [boxes]);
 
   // Realtime subscription
   useEffect(() => {
@@ -335,9 +375,10 @@ export default function Grid({
                       <span className="text-[6px] text-yellow-400 font-bold leading-none">★</span>
                     )}
                     {displayName && (
-                      <span className={`font-medium truncate w-full px-px text-center ${
-                        isMine ? 'text-sea-green' : 'text-foreground/70'
-                      }`}>
+                      <span
+                        className="font-medium truncate w-full px-px text-center"
+                        style={{ color: box.user_id ? playerColorMap.get(box.user_id) : undefined }}
+                      >
                         {displayName}
                       </span>
                     )}
