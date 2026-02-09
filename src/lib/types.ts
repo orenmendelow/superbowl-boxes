@@ -73,6 +73,8 @@ export interface ESPNScore {
   lastPlay?: string;
   down?: string;
   possession?: string;
+  /** Cumulative score at end of each quarter: index 0 = Q1, 1 = Q2, … */
+  quarterScores?: { home: number; away: number }[];
 }
 
 export function calculatePrice(count: number): number {

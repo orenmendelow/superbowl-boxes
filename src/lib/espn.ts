@@ -20,6 +20,19 @@ export async function fetchScore(): Promise<ESPNScore | null> {
 
     if (!homeComp || !awayComp) return null;
 
+    // Build cumulative per-quarter scores from ESPN linescores
+    const homeLinescores: number[] = (homeComp.linescores || []).map((ls: any) => Number(ls.value) || 0);
+    const awayLinescores: number[] = (awayComp.linescores || []).map((ls: any) => Number(ls.value) || 0);
+    const quarterScores: { home: number; away: number }[] = [];
+    let homeCum = 0;
+    let awayCum = 0;
+    const numQtrs = Math.max(homeLinescores.length, awayLinescores.length);
+    for (let i = 0; i < numQtrs; i++) {
+      homeCum += homeLinescores[i] || 0;
+      awayCum += awayLinescores[i] || 0;
+      quarterScores.push({ home: homeCum, away: awayCum });
+    }
+
     return {
       gameState: status.type.state as 'pre' | 'in' | 'post',
       period: status.period || 0,
@@ -33,6 +46,7 @@ export async function fetchScore(): Promise<ESPNScore | null> {
       lastPlay: competition.situation?.lastPlay?.text,
       down: competition.situation?.shortDownDistanceText,
       possession: competition.situation?.possession,
+      quarterScores,
     };
   } catch (err) {
     console.error('ESPN API error:', err);

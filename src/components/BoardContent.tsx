@@ -132,10 +132,10 @@ export default function BoardContent({
             }
 
             if (isEndedUnposted && score) {
-              // Use the score at end of that quarter — we don't have per-quarter
-              // snapshots so show current score digits as best approximation
-              const homeDigit = score.homeScore % 10;
-              const awayDigit = score.awayScore % 10;
+              // Use cumulative score at end of that specific quarter
+              const qScore = score.quarterScores?.[q - 1];
+              const homeDigit = qScore ? qScore.home % 10 : score.homeScore % 10;
+              const awayDigit = qScore ? qScore.away % 10 : score.awayScore % 10;
               const likelyWinner = findBoxOwner(
                 homeDigit,
                 awayDigit,
