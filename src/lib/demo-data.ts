@@ -46,11 +46,11 @@ export const demoGame: Game = {
 // null = available, otherwise owner id suffix (1-8)
 // ------------------------------------------------------------------
 // Layout designed so boxes are scattered realistically across the grid.
-// 73 claimed boxes, 27 available (null).
+// 75 claimed boxes, 25 available (null).
 //
 // Key cells:
 //   (row=7, col=0) = Q1 winner — owner demo-3 (Jake Torres)
-//   (row=0, col=2) = Q2 winner — owner demo-5 (Alex Rivera, the demo user)
+//   (row=4, col=7) = Q2 winner — owner demo-1 (Mike Chen)
 //
 const OWNER_MAP: (number | null)[][] = [
   //  c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
@@ -109,9 +109,15 @@ export const demoBoxes: Box[] = buildDemoBoxes();
 //   Box at (7, 0) = id 71, owner demo-3 (Jake Torres)
 //
 // Q2: SEA 14, NE 10  →  home_last=4, away_last=0
-//   colIdx = row_numbers.indexOf(4) = 7
-//   rowIdx = col_numbers.indexOf(0) = 4
+//   colIdx = row_numbers.indexOf(4) → 7
+//   rowIdx = col_numbers.indexOf(0) → 4
 //   Box at (4, 7) = id 48, owner demo-1 (Mike Chen)
+//
+// Owner counts: demo-1=21, demo-2=18, demo-3=10, demo-4=10,
+//               demo-5=5,  demo-6=5,  demo-7=3,  demo-8=3
+// Pot = calculatePrice(21)+calculatePrice(18)+calculatePrice(10)*2
+//      +calculatePrice(5)*2+calculatePrice(3)*2
+//     = 80+75+45+45+25+25+15+15 = $325
 // ------------------------------------------------------------------
 
 const q1WinnerProfile = DEMO_PROFILES.find((p) => p.id === 'demo-3')!;
@@ -128,7 +134,7 @@ export const demoQuarterResults: QuarterResult[] = [
     away_last_digit: 7,
     winning_box_id: 71, // row 7, col 0
     winning_user_id: 'demo-3',
-    payout_amount: 10,
+    payout_amount: 32.50,  // totalPot($325) * 10% = $32.50
     created_at: '2026-02-23T19:15:00Z',
     profiles: q1WinnerProfile,
   },
@@ -142,7 +148,7 @@ export const demoQuarterResults: QuarterResult[] = [
     away_last_digit: 0,
     winning_box_id: 48, // row 4, col 7
     winning_user_id: 'demo-1',
-    payout_amount: 20,
+    payout_amount: 65,    // totalPot($325) * 20% = $65
     created_at: '2026-02-23T20:00:00Z',
     profiles: q2WinnerProfile,
   },
@@ -150,15 +156,14 @@ export const demoQuarterResults: QuarterResult[] = [
 
 export const demoScore: ESPNScore = {
   gameState: 'in',
-  period: 3,
-  displayClock: '12:35',
+  period: 2,
+  displayClock: '0:00',
   homeScore: 14,  // SEA
   awayScore: 10,  // NE
   homeTeam: 'SEA',
   awayTeam: 'NE',
   homeLogo: '',
   awayLogo: '',
-  lastPlay: 'K.Walker rush for 4 yards',
   quarterScores: [
     { home: 7, away: 7 },   // End of Q1: SEA 7, NE 7
     { home: 14, away: 10 }, // End of Q2: SEA 14, NE 10

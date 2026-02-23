@@ -278,15 +278,15 @@ export default function Grid({
         >
           {/* Corner cell */}
           <div className="flex items-center justify-center text-[8px] sm:text-[10px] text-muted leading-tight text-center">
-            <span><span className="text-ne-red">NE</span>→<br/><span className="text-sea-green">SEA</span>↓</span>
+            <span><span className="text-sea-green">SEA</span>→<br/><span className="text-ne-red">NE</span>↓</span>
           </div>
 
-          {/* Column headers (NE / home) */}
+          {/* Column headers (SEA / home) */}
           {Array.from({ length: 10 }, (_, i) => (
             <div
               key={`col-${i}`}
               className="flex items-center justify-center rounded text-[10px] sm:text-xs font-bold"
-              style={{ background: '#c60c30', color: 'white' }}
+              style={{ background: '#69be28', color: '#002a5c' }}
             >
               {game.row_numbers ? game.row_numbers[i] : '?'}
             </div>
@@ -295,11 +295,11 @@ export default function Grid({
           {/* Rows */}
           {Array.from({ length: 10 }, (_, rowIdx) => (
             <React.Fragment key={`row-${rowIdx}`}>
-              {/* Row header (SEA / away) */}
+              {/* Row header (NE / away) */}
               <div
                 key={`row-header-${rowIdx}`}
                 className="flex items-center justify-center rounded text-[10px] sm:text-xs font-bold"
-                style={{ background: '#69be28', color: '#002a5c' }}
+                style={{ background: '#c60c30', color: 'white' }}
               >
                 {game.col_numbers ? game.col_numbers[rowIdx] : '?'}
               </div>
@@ -315,7 +315,7 @@ export default function Grid({
                 const isReserved = box.status === 'reserved';
                 const isConfirmed = box.status === 'confirmed';
 
-                // Column headers (row_numbers) = NE/home digits, Row headers (col_numbers) = SEA/away digits
+                // Column headers (row_numbers) = SEA/home digits, Row headers (col_numbers) = NE/away digits
                 const homeDigit = game.row_numbers ? game.row_numbers[colIdx] : null;
                 const awayDigit = game.col_numbers ? game.col_numbers[rowIdx] : null;
                 const isLiveWinner =

@@ -149,7 +149,7 @@ export default function BoardContent({
                     {currentWinner || '—'}
                   </p>
                   <p className="text-[9px] text-sea-green/60">
-                    ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
+                    ${(totalPot * Number(payouts[q - 1]) / 100).toFixed(0)}
                   </p>
                 </div>
               );
@@ -178,7 +178,7 @@ export default function BoardContent({
                     {likelyWinner || '—'}
                   </p>
                   <p className="text-[9px] text-yellow-500/60">
-                    ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
+                    ${(totalPot * Number(payouts[q - 1]) / 100).toFixed(0)}
                   </p>
                 </div>
               );
@@ -197,7 +197,7 @@ export default function BoardContent({
                   —
                 </p>
                 <p className="text-[9px] text-muted/40">
-                  ${(totalPot * Number(payouts[q - 1])).toFixed(0)}
+                  ${(totalPot * Number(payouts[q - 1]) / 100).toFixed(0)}
                 </p>
               </div>
             );
