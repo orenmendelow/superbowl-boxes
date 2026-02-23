@@ -3,59 +3,73 @@ import { redirect } from 'next/navigation';
 import AdminDashboard from './AdminDashboard';
 import { Box, Game, QuarterResult, Profile } from '@/lib/types';
 import { GAME_ID } from '@/lib/constants';
+import { demoGame, demoBoxes, demoQuarterResults, demoProfiles } from '@/lib/demo-data';
 
 export default async function AdminPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
-  if (!user) redirect('/login?redirect=/admin');
+  let game: Game | null = null;
+  let boxes: Box[] = [];
+  let quarterResults: QuarterResult[] = [];
+  let profiles: Profile[] = [];
 
-  // Check if admin
-  const { data: adminRow } = await supabase
-    .from('admins')
-    .select('user_id')
-    .eq('user_id', user.id)
-    .single();
+  if (isDemo) {
+    game = demoGame;
+    boxes = demoBoxes;
+    quarterResults = demoQuarterResults;
+    profiles = demoProfiles;
+  } else {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!adminRow) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <h1 className="text-2xl font-bold">Access Denied</h1>
-          <p className="text-muted">You are not an admin.</p>
-          <a href="/board" className="text-sea-green hover:underline text-sm">← Back to Board</a>
+    if (!user) redirect('/login?redirect=/admin');
+
+    const { data: adminRow } = await supabase
+      .from('admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!adminRow) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <h1 className="text-2xl font-bold">Access Denied</h1>
+            <p className="text-muted">You are not an admin.</p>
+            <a href="/board" className="text-sea-green hover:underline text-sm">← Back to Board</a>
+          </div>
         </div>
-      </div>
-    );
+      );
+    }
+
+    const { data: gameData } = await supabase
+      .from('game')
+      .select('*')
+      .eq('id', GAME_ID)
+      .single();
+    game = gameData;
+
+    const { data: boxData } = await supabase
+      .from('boxes')
+      .select('*, profiles(full_name, email)')
+      .eq('game_id', GAME_ID)
+      .order('row_index')
+      .order('col_index');
+    boxes = (boxData as Box[]) || [];
+
+    const { data: qrData } = await supabase
+      .from('quarter_results')
+      .select('*, profiles:winning_user_id(full_name)')
+      .eq('game_id', GAME_ID)
+      .order('quarter');
+    quarterResults = (qrData as QuarterResult[]) || [];
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .order('full_name');
+    profiles = (profileData as Profile[]) || [];
   }
-
-  // Fetch game
-  const { data: game } = await supabase
-    .from('game')
-    .select('*')
-    .eq('id', GAME_ID)
-    .single();
-
-  // Fetch boxes with profiles
-  const { data: boxes } = await supabase
-    .from('boxes')
-    .select('*, profiles(full_name, email)')
-    .eq('game_id', GAME_ID)
-    .order('row_index')
-    .order('col_index');
-
-  // Fetch quarter results
-  const { data: quarterResults } = await supabase
-    .from('quarter_results')
-    .select('*, profiles:winning_user_id(full_name)')
-    .eq('game_id', GAME_ID)
-    .order('quarter');
-
-  // Fetch all profiles
-  const { data: profiles } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('full_name');
 
   if (!game) {
     return (
@@ -67,10 +81,10 @@ export default async function AdminPage() {
 
   return (
     <AdminDashboard
-      game={game as Game}
-      boxes={(boxes as Box[]) || []}
-      quarterResults={(quarterResults as QuarterResult[]) || []}
-      profiles={(profiles as Profile[]) || []}
+      game={game}
+      boxes={boxes}
+      quarterResults={quarterResults}
+      profiles={profiles}
       gameId={GAME_ID}
     />
   );

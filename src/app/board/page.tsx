@@ -4,51 +4,68 @@ import Footer from '@/components/Footer';
 import BoardContent from '@/components/BoardContent';
 import { Game, Box, QuarterResult } from '@/lib/types';
 import { GAME_ID } from '@/lib/constants';
+import { demoGame, demoBoxes, demoQuarterResults, DEMO_USER_ID } from '@/lib/demo-data';
 
 export default async function BoardPage() {
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
   let userName: string | null = null;
   let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
-    userName = profile?.full_name || null;
+  let userId: string | null = null;
+  let game: Game | null = null;
+  let boxes: Box[] | null = null;
+  let quarterResults: QuarterResult[] = [];
 
-    const { data: adminRow } = await supabase
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', user.id)
+  if (isDemo) {
+    userName = 'Demo User';
+    isAdmin = true;
+    userId = DEMO_USER_ID;
+    game = demoGame;
+    boxes = demoBoxes;
+    quarterResults = demoQuarterResults;
+  } else {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    userId = user?.id || null;
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      userName = profile?.full_name || null;
+
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      isAdmin = !!adminRow;
+    }
+
+    const { data: gameData } = await supabase
+      .from('game')
+      .select('*')
+      .eq('id', GAME_ID)
       .single();
-    isAdmin = !!adminRow;
+    game = gameData;
+
+    const { data: boxData } = await supabase
+      .from('boxes')
+      .select('*, profiles(full_name, email)')
+      .eq('game_id', GAME_ID)
+      .order('row_index')
+      .order('col_index');
+    boxes = boxData;
+
+    const { data: qrData } = await supabase
+      .from('quarter_results')
+      .select('*, profiles:winning_user_id(full_name)')
+      .eq('game_id', GAME_ID)
+      .order('quarter');
+    quarterResults = (qrData as QuarterResult[]) || [];
   }
-
-  // Fetch game
-  const { data: game } = await supabase
-    .from('game')
-    .select('*')
-    .eq('id', GAME_ID)
-    .single();
-
-  // Fetch boxes with profiles
-  const { data: boxes } = await supabase
-    .from('boxes')
-    .select('*, profiles(full_name, email)')
-    .eq('game_id', GAME_ID)
-    .order('row_index')
-    .order('col_index');
-
-  // Fetch quarter results with profiles
-  const { data: quarterResults } = await supabase
-    .from('quarter_results')
-    .select('*, profiles:winning_user_id(full_name)')
-    .eq('game_id', GAME_ID)
-    .order('quarter');
 
   if (!game || !boxes) {
     return (
@@ -81,9 +98,9 @@ export default async function BoardPage() {
         <BoardContent
           initialBoxes={boxes as Box[]}
           game={game as Game}
-          userId={user?.id || null}
+          userId={userId}
           userName={userName}
-          quarterResults={(quarterResults as QuarterResult[]) || []}
+          quarterResults={quarterResults}
         />
       </main>
 

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 
 export default function Header({ userName, isAdmin }: { userName?: string | null; isAdmin?: boolean }) {
   const router = useRouter();
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
   async function handleLogout() {
     const supabase = createClient();
@@ -12,6 +13,9 @@ export default function Header({ userName, isAdmin }: { userName?: string | null
     router.push('/');
     router.refresh();
   }
+
+  const displayName = isDemo ? 'Demo User' : userName;
+  const showAdmin = isDemo || isAdmin;
 
   return (
     <header className="border-b border-border bg-surface/80 backdrop-blur-md sticky top-0 z-50">
@@ -28,21 +32,23 @@ export default function Header({ userName, isAdmin }: { userName?: string | null
           <a href="/board" className="text-muted hover:text-foreground transition-colors">
             Board
           </a>
-          {isAdmin && (
+          {showAdmin && (
             <a href="/admin" className="text-muted hover:text-foreground transition-colors">
               Admin
             </a>
           )}
-          {userName ? (
+          {displayName ? (
             <>
               <span className="text-muted">|</span>
-              <span className="text-foreground font-medium">{userName}</span>
-              <button
-                onClick={handleLogout}
-                className="text-muted hover:text-ne-red transition-colors text-xs"
-              >
-                Logout
-              </button>
+              <span className="text-foreground font-medium">{displayName}</span>
+              {!isDemo && (
+                <button
+                  onClick={handleLogout}
+                  className="text-muted hover:text-ne-red transition-colors text-xs"
+                >
+                  Logout
+                </button>
+              )}
             </>
           ) : (
             <a

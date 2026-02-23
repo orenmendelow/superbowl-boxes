@@ -5,39 +5,48 @@ import Countdown from '@/components/Countdown';
 import Link from 'next/link';
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
 
   let userName: string | null = null;
   let isAdmin = false;
-  if (user) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name')
-      .eq('id', user.id)
-      .single();
-    userName = profile?.full_name || null;
+  let soldCount = 0;
 
-    const { data: adminRow } = await supabase
-      .from('admins')
-      .select('user_id')
-      .eq('user_id', user.id)
-      .single();
-    isAdmin = !!adminRow;
+  if (isDemo) {
+    userName = 'Demo User';
+    isAdmin = true;
+    soldCount = 73;
+  } else {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+      userName = profile?.full_name || null;
+
+      const { data: adminRow } = await supabase
+        .from('admins')
+        .select('user_id')
+        .eq('user_id', user.id)
+        .single();
+      isAdmin = !!adminRow;
+    }
+
+    const { count: confirmedCount } = await supabase
+      .from('boxes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'confirmed');
+
+    const { count: reservedCount } = await supabase
+      .from('boxes')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'reserved');
+
+    soldCount = (confirmedCount || 0) + (reservedCount || 0);
   }
-
-  // Get box counts
-  const { count: confirmedCount } = await supabase
-    .from('boxes')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'confirmed');
-
-  const { count: reservedCount } = await supabase
-    .from('boxes')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'reserved');
-
-  const soldCount = (confirmedCount || 0) + (reservedCount || 0);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -88,7 +97,7 @@ export default async function Home() {
             {/* CTA */}
             <div className="space-y-4">
               <Link
-                href={user ? '/board' : '/login'}
+                href={isDemo || userName ? '/board' : '/login'}
                 className="inline-block bg-sea-green text-sea-navy font-bold text-lg px-8 py-3 rounded-xl hover:brightness-110 transition transform hover:scale-105"
               >
                 Get Your Boxes
