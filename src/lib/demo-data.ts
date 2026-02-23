@@ -1,4 +1,4 @@
-import { Game, Box, QuarterResult, Profile } from './types';
+import { Game, Box, QuarterResult, Profile, ESPNScore } from './types';
 import { GAME_ID } from './constants';
 
 const DEMO_PROFILES: Profile[] = [
@@ -6,7 +6,7 @@ const DEMO_PROFILES: Profile[] = [
   { id: 'demo-2', full_name: 'Sarah Kim', email: 'sarah@example.com', created_at: '2026-01-16T00:00:00Z' },
   { id: 'demo-3', full_name: 'Jake Torres', email: 'jake@example.com', created_at: '2026-01-17T00:00:00Z' },
   { id: 'demo-4', full_name: 'Lisa Patel', email: 'lisa@example.com', created_at: '2026-01-18T00:00:00Z' },
-  { id: 'demo-5', full_name: 'Demo User', email: 'demo@example.com', created_at: '2026-01-14T00:00:00Z' },
+  { id: 'demo-5', full_name: 'Alex Rivera', email: 'alex@example.com', created_at: '2026-01-14T00:00:00Z' },
   { id: 'demo-6', full_name: 'Chris Wong', email: 'chris@example.com', created_at: '2026-01-19T00:00:00Z' },
   { id: 'demo-7', full_name: 'Emma Davis', email: 'emma@example.com', created_at: '2026-01-20T00:00:00Z' },
   { id: 'demo-8', full_name: 'Ryan Murphy', email: 'ryan@example.com', created_at: '2026-01-21T00:00:00Z' },
@@ -26,7 +26,7 @@ export const demoGame: Game = {
   away_color: '#002244',
   away_alt_color: '#C60C30',
   espn_game_id: '401772988',
-  kickoff_time: '2026-02-08T23:30:00Z',
+  kickoff_time: '2026-02-23T18:30:00Z', // Earlier today — game is in progress
   price_per_box: 5,
   price_10_boxes: 35,
   price_20_boxes: 60,
@@ -37,56 +37,61 @@ export const demoGame: Game = {
   numbers_assigned: true,
   row_numbers: [7, 3, 0, 9, 5, 1, 8, 4, 6, 2],
   col_numbers: [4, 8, 1, 6, 0, 9, 3, 7, 2, 5],
-  status: 'selling',
+  status: 'live',
   created_at: '2026-01-10T00:00:00Z',
 };
 
+// ------------------------------------------------------------------
+// Scattered box ownership map
+// null = available, otherwise owner id suffix (1-8)
+// ------------------------------------------------------------------
+// Layout designed so boxes are scattered realistically across the grid.
+// 73 claimed boxes, 27 available (null).
+//
+// Key cells:
+//   (row=7, col=0) = Q1 winner — owner demo-3 (Jake Torres)
+//   (row=0, col=2) = Q2 winner — owner demo-5 (Alex Rivera, the demo user)
+//
+const OWNER_MAP: (number | null)[][] = [
+  //  c0    c1    c2    c3    c4    c5    c6    c7    c8    c9
+  [    1, null,    5,    2, null,    4,    1,    3,    6, null],  // row 0
+  [    2,    3, null,    1,    7,    2, null,    1,    4,    8],  // row 1
+  [ null,    1,    6,    4,    2, null,    3,    8,    1,    2],  // row 2
+  [    4,    2,    1, null,    5,    1,    7,    2, null,    3],  // row 3
+  [    1, null,    3,    2,    6,    4, null,    1,    2,    5],  // row 4
+  [    3,    4, null,    1,    2, null,    8,    5, null,    1],  // row 5
+  [ null,    2,    4,    1, null,    3,    1,    6,    2, null],  // row 6
+  [    3,    1,    2, null,    4,    1,    2, null,    7,    1],  // row 7
+  [    2, null,    1,    4,    3, null,    5,    1, null,    2],  // row 8
+  [    1,    4, null,    2, null,    6,    1,    3,    2, null],  // row 9
+];
+
 function buildDemoBoxes(): Box[] {
   const boxes: Box[] = [];
-  const owners = [
-    { id: 'demo-1', name: 'Mike Chen', count: 20 },
-    { id: 'demo-2', name: 'Sarah Kim', count: 15 },
-    { id: 'demo-3', name: 'Jake Torres', count: 10 },
-    { id: 'demo-4', name: 'Lisa Patel', count: 10 },
-    { id: 'demo-5', name: 'Demo User', count: 8 },
-    { id: 'demo-6', name: 'Chris Wong', count: 5 },
-    { id: 'demo-7', name: 'Emma Davis', count: 3 },
-    { id: 'demo-8', name: 'Ryan Murphy', count: 2 },
-  ];
-
-  let ownerIdx = 0;
-  let ownerRemaining = owners[0].count;
   let boxId = 1;
 
   for (let row = 0; row < 10; row++) {
     for (let col = 0; col < 10; col++) {
-      const claimed = ownerIdx < owners.length;
-      const owner = claimed ? owners[ownerIdx] : null;
+      const ownerSuffix = OWNER_MAP[row][col];
+      const ownerId = ownerSuffix ? `demo-${ownerSuffix}` : null;
+      const profile = ownerId
+        ? DEMO_PROFILES.find((p) => p.id === ownerId) ?? null
+        : null;
 
       boxes.push({
         id: boxId++,
         game_id: GAME_ID,
         row_index: row,
         col_index: col,
-        user_id: owner?.id ?? null,
-        reserved_at: owner ? '2026-01-20T00:00:00Z' : null,
-        confirmed_at: owner ? '2026-01-21T00:00:00Z' : null,
+        user_id: ownerId,
+        reserved_at: ownerId ? '2026-02-01T00:00:00Z' : null,
+        confirmed_at: ownerId ? '2026-02-02T00:00:00Z' : null,
         is_free: false,
-        status: owner ? 'confirmed' : 'available',
-        profiles: owner
-          ? DEMO_PROFILES.find((p) => p.id === owner.id) ?? null
-          : null,
+        status: ownerId ? 'confirmed' : 'available',
+        profiles: profile,
       });
 
-      if (claimed) {
-        ownerRemaining--;
-        if (ownerRemaining === 0) {
-          ownerIdx++;
-          if (ownerIdx < owners.length) {
-            ownerRemaining = owners[ownerIdx].count;
-          }
-        }
-      }
+      boxId; // already incremented above
     }
   }
 
@@ -95,6 +100,69 @@ function buildDemoBoxes(): Box[] {
 
 export const demoBoxes: Box[] = buildDemoBoxes();
 
-export const demoQuarterResults: QuarterResult[] = [];
+// ------------------------------------------------------------------
+// Quarter results — Q1 and Q2 complete (halftime)
+// ------------------------------------------------------------------
+// Q1: NE 7, SEA 7  →  home_last=7, away_last=7
+//   col where row_numbers[col]=7  →  col=0
+//   row where col_numbers[row]=7  →  row=7
+//   Box at (7, 0) = id 71, owner demo-3 (Jake Torres)
+//
+// Q2: SEA 14, NE 10  →  home_last=4, away_last=0
+//   colIdx = row_numbers.indexOf(4) = 7
+//   rowIdx = col_numbers.indexOf(0) = 4
+//   Box at (4, 7) = id 48, owner demo-1 (Mike Chen)
+// ------------------------------------------------------------------
+
+const q1WinnerProfile = DEMO_PROFILES.find((p) => p.id === 'demo-3')!;
+const q2WinnerProfile = DEMO_PROFILES.find((p) => p.id === 'demo-1')!;
+
+export const demoQuarterResults: QuarterResult[] = [
+  {
+    id: 1,
+    game_id: GAME_ID,
+    quarter: 1,
+    home_score: 7,    // SEA 7
+    away_score: 7,    // NE 7
+    home_last_digit: 7,
+    away_last_digit: 7,
+    winning_box_id: 71, // row 7, col 0
+    winning_user_id: 'demo-3',
+    payout_amount: 10,
+    created_at: '2026-02-23T19:15:00Z',
+    profiles: q1WinnerProfile,
+  },
+  {
+    id: 2,
+    game_id: GAME_ID,
+    quarter: 2,
+    home_score: 14,   // SEA 14
+    away_score: 10,   // NE 10
+    home_last_digit: 4,
+    away_last_digit: 0,
+    winning_box_id: 48, // row 4, col 7
+    winning_user_id: 'demo-1',
+    payout_amount: 20,
+    created_at: '2026-02-23T20:00:00Z',
+    profiles: q2WinnerProfile,
+  },
+];
+
+export const demoScore: ESPNScore = {
+  gameState: 'in',
+  period: 3,
+  displayClock: '12:35',
+  homeScore: 14,  // SEA
+  awayScore: 10,  // NE
+  homeTeam: 'SEA',
+  awayTeam: 'NE',
+  homeLogo: '',
+  awayLogo: '',
+  lastPlay: 'K.Walker rush for 4 yards',
+  quarterScores: [
+    { home: 7, away: 7 },   // End of Q1: SEA 7, NE 7
+    { home: 14, away: 10 }, // End of Q2: SEA 14, NE 10
+  ],
+};
 
 export const demoProfiles: Profile[] = DEMO_PROFILES;

@@ -60,11 +60,9 @@ export default async function Home() {
             {/* Teams */}
             <div className="flex items-center justify-center gap-4 sm:gap-8">
               <div className="text-center">
-                <img
-                  src="/logos/sea.png"
-                  alt="Seattle Seahawks"
-                  className="w-16 h-16 sm:w-24 sm:h-24 mx-auto"
-                />
+                <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-full bg-sea-green/20 flex items-center justify-center text-sea-green font-black text-2xl sm:text-4xl">
+                  SEA
+                </div>
                 <p className="text-sea-green font-bold mt-2 text-sm sm:text-lg">Seahawks</p>
                 <p className="text-muted text-xs">-4.5</p>
               </div>
@@ -81,11 +79,9 @@ export default async function Home() {
               </div>
 
               <div className="text-center">
-                <img
-                  src="/logos/ne.png"
-                  alt="New England Patriots"
-                  className="w-16 h-16 sm:w-24 sm:h-24 mx-auto"
-                />
+                <div className="w-16 h-16 sm:w-24 sm:h-24 mx-auto rounded-full bg-ne-red/20 flex items-center justify-center text-ne-red font-black text-2xl sm:text-4xl">
+                  NE
+                </div>
                 <p className="text-ne-red font-bold mt-2 text-sm sm:text-lg">Patriots</p>
                 <p className="text-muted text-xs">+4.5</p>
               </div>

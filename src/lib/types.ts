@@ -78,17 +78,24 @@ export interface ESPNScore {
 }
 
 export function calculatePrice(count: number): number {
+  if (count <= 0) return 0;
+
+  // Raw tier price
+  let tierPrice: number;
   if (count >= 20) {
     const fullSets = Math.floor(count / 20);
     const remainder = count % 20;
-    return fullSets * 60 + calculatePrice(remainder);
-  }
-  if (count >= 10) {
+    tierPrice = fullSets * 60 + (remainder > 0 ? calculatePrice(remainder) : 0);
+  } else if (count >= 10) {
     const fullSets = Math.floor(count / 10);
     const remainder = count % 10;
-    return fullSets * 35 + remainder * 5;
+    tierPrice = fullSets * 35 + remainder * 5;
+  } else {
+    tierPrice = count * 5;
   }
-  return count * 5;
+
+  // Guarantee monotonically non-decreasing: price(n) >= price(n-1)
+  return Math.max(calculatePrice(count - 1), tierPrice);
 }
 
 /**
@@ -124,7 +131,7 @@ export function calculateUpgradePrice(
   if (additionalCount <= 0) return 0;
   const totalPrice = calculatePrice(existingCount + additionalCount);
   const alreadyPaid = calculatePrice(existingCount);
-  return Math.max(0, totalPrice - alreadyPaid);
+  return totalPrice - alreadyPaid;
 }
 
 

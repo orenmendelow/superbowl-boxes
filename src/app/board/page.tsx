@@ -4,7 +4,7 @@ import Footer from '@/components/Footer';
 import BoardContent from '@/components/BoardContent';
 import { Game, Box, QuarterResult } from '@/lib/types';
 import { GAME_ID } from '@/lib/constants';
-import { demoGame, demoBoxes, demoQuarterResults, DEMO_USER_ID } from '@/lib/demo-data';
+import { demoGame, demoBoxes, demoQuarterResults, demoProfiles, demoScore, DEMO_USER_ID } from '@/lib/demo-data';
 
 export default async function BoardPage() {
   const isDemo = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
@@ -17,7 +17,7 @@ export default async function BoardPage() {
   let quarterResults: QuarterResult[] = [];
 
   if (isDemo) {
-    userName = 'Demo User';
+    userName = demoProfiles.find((p) => p.id === DEMO_USER_ID)?.full_name ?? 'Guest';
     isAdmin = true;
     userId = DEMO_USER_ID;
     game = demoGame;
@@ -101,6 +101,7 @@ export default async function BoardPage() {
           userId={userId}
           userName={userName}
           quarterResults={quarterResults}
+          demoScore={isDemo ? demoScore : undefined}
         />
       </main>
 

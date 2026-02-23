@@ -11,6 +11,7 @@ interface BoardContentProps {
   userId: string | null;
   userName: string | null;
   quarterResults: QuarterResult[];
+  demoScore?: ESPNScore | null;
 }
 
 const QUARTER_LABELS = ['Q1', 'Q2', 'Q3', 'FINAL'];
@@ -21,8 +22,10 @@ export default function BoardContent({
   userId,
   userName,
   quarterResults,
+  demoScore,
 }: BoardContentProps) {
-  const [score, setScore] = useState<ESPNScore | null>(null);
+  const [score, setScore] = useState<ESPNScore | null>(demoScore ?? null);
+  const isDemo = !!demoScore;
 
   // Build a lookup of quarter results by quarter number
   const postedQuarters = useMemo(() => {
@@ -62,7 +65,28 @@ export default function BoardContent({
 
   return (
     <>
-      <Scoreboard onScoreUpdate={setScore} />
+      {isDemo ? (
+        <div className="bg-surface rounded-xl border border-border p-4 sm:p-6">
+          <div className="text-center mb-3">
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-ne-red/20 text-ne-red animate-pulse">
+              HALFTIME
+            </span>
+          </div>
+          <div className="flex items-center justify-center gap-4 sm:gap-8">
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs sm:text-sm font-bold text-muted">{score?.awayTeam}</span>
+              <span className="text-3xl sm:text-5xl font-bold">{score?.awayScore}</span>
+            </div>
+            <span className="text-2xl text-muted font-light">—</span>
+            <div className="flex flex-col items-center gap-1">
+              <span className="text-xs sm:text-sm font-bold text-muted">{score?.homeTeam}</span>
+              <span className="text-3xl sm:text-5xl font-bold">{score?.homeScore}</span>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <Scoreboard onScoreUpdate={setScore} />
+      )}
 
       {/* Quarter Milestones */}
       {game.numbers_assigned && (
