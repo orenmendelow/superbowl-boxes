@@ -61,7 +61,7 @@ export default async function Home() {
             <div className="flex items-center justify-center gap-4 sm:gap-8">
               <div className="text-center">
                 <img
-                  src="https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/sea.png"
+                  src="/logos/sea.png"
                   alt="Seattle Seahawks"
                   className="w-16 h-16 sm:w-24 sm:h-24 mx-auto"
                 />
@@ -82,7 +82,7 @@ export default async function Home() {
 
               <div className="text-center">
                 <img
-                  src="https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/ne.png"
+                  src="/logos/ne.png"
                   alt="New England Patriots"
                   className="w-16 h-16 sm:w-24 sm:h-24 mx-auto"
                 />

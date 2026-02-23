@@ -124,7 +124,7 @@ export function calculateUpgradePrice(
   if (additionalCount <= 0) return 0;
   const totalPrice = calculatePrice(existingCount + additionalCount);
   const alreadyPaid = calculatePrice(existingCount);
-  return totalPrice - alreadyPaid;
+  return Math.max(0, totalPrice - alreadyPaid);
 }
 
 
